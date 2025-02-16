@@ -8,7 +8,7 @@ export const videoDetails = [
         thumbnail_en: require('@/assets/thumbnails/english/1.jpg'),
         thumbnail_punjabi: require('@/assets/thumbnails/punjabi/1.jpg'),
         description: "This is Bunty",
-        level: 1
+        level: "1"
     },
     {
         id: "2",
@@ -19,6 +19,6 @@ export const videoDetails = [
         thumbnail_en: require('@/assets/thumbnails/english/2.jpg'),
         thumbnail_punjabi: require('@/assets/thumbnails/punjabi/2.jpg'),
         description: "This is The Moon",
-        level: 1
+        level: "2"
     }
 ];
