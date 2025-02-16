@@ -13,8 +13,8 @@ const VideoList = () => {
           <TouchableOpacity onPress={() => router.push(`/video/${item.id}`)}>
             <View style={styles.card}>
               <Image source={item.thumbnail} style={styles.thumbnail} />
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.description}>{item.description}</Text>
+              <Text className="" style={styles.title}>{item.title}</Text>
+              <Text className="" style={styles.description}>{item.description}</Text>
             </View>
           </TouchableOpacity>
         )}
