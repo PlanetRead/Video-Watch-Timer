@@ -1,16 +1,14 @@
 import { useLocalSearchParams } from "expo-router";
-import { useEvent } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { StyleSheet, View, Button, Text } from "react-native";
 import { videoDetails } from '@/assets/details';
 
 export default function VideoScreen() {
-  const { id } = useLocalSearchParams();
 
-  // Find video by ID
+  const { id, language } = useLocalSearchParams<{ id?: string; language?: string }>();
+
   const video = videoDetails.find((v) => v.id === id);
 
-  // Handle case where video is not found
   if (!video) {
     return (
       <View style={styles.contentContainer}>
@@ -19,15 +17,14 @@ export default function VideoScreen() {
     );
   }
 
-  // Create video player
-  const player = useVideoPlayer(video.url, (player) => {
-    player.loop = true;
-    player.play();
-  });
+  const player = useVideoPlayer(
+    language === "pa" ? video.url_punjabi : video.url_en,
+    (player) => {
+      player.loop = true;
+      player.play();
+    }
+  );
 
-  const { isPlaying } = useEvent(player, "playingChange", {
-    isPlaying: player.playing,
-  });
 
   return (
     <View style={styles.contentContainer}>
