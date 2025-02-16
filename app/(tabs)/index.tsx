@@ -8,7 +8,6 @@ const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');
 const VideoList = () => {
   const router = useRouter();
-  // const [language, setLanguage] = useState("en");
 
   const toggleLanguage = () => {
     setLanguage((prev) => (prev === "en" ? "pa" : "en"));
@@ -53,7 +52,7 @@ const VideoList = () => {
             items={levels}
             setOpen={(val) => {
               setLevelOpen(val);
-              if (open) setOpen(false); // Close the language dropdown
+              if (open) setOpen(false);
             }}
             setValue={setLevel}
             setItems={setLevels}
@@ -66,7 +65,7 @@ const VideoList = () => {
 
         <FlatList
           className="overflow-y-scroll"
-          data={videoDetails}
+          data={videoDetails.filter(item => level === "all" || item.level === level)}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => router.push(`/video/${item.id}?language=${language}`)}>
