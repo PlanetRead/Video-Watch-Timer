@@ -1,14 +1,16 @@
 import { useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { StyleSheet, View, Text } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, Image } from "react-native";
 import { videoDetails } from "@/assets/details";
 import { useEffect, useState } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
+import { useRouter } from "expo-router";
 
 export default function VideoScreen() {
+  const router = useRouter();
   const { id, language } = useLocalSearchParams<{ id?: string; language?: string }>();
   const [originalOrientation, setOriginalOrientation] = useState<ScreenOrientation.Orientation>();
-
+  const back = require('@/assets/images/back.png');
   const video = videoDetails.find((v) => v.id === id);
 
   if (!video) {
@@ -23,7 +25,7 @@ export default function VideoScreen() {
     language === "pa" ? video.url_punjabi : video.url_en,
     async (player) => {
       player.loop = true;
-      
+
       // Store the original orientation before changing
       const currentOrientation = await ScreenOrientation.getOrientationAsync();
       setOriginalOrientation(currentOrientation);
@@ -44,8 +46,23 @@ export default function VideoScreen() {
     };
   }, [originalOrientation]);
 
+  const returnBackToHome = () => {
+    if (originalOrientation) {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.DEFAULT);
+    }
+    router.push(`/`);
+  }
+
   return (
     <View style={styles.fullscreenContainer}>
+
+      <TouchableOpacity
+        className="absolute top-[43%] left-2 bg-white rounded-full p-2 z-10 shadow-lg shadow-black"
+        onPress={returnBackToHome}
+      >
+        <Image className="w-8 h-8" source={back} />
+      </TouchableOpacity>
+
       <VideoView
         style={styles.video}
         player={player}
