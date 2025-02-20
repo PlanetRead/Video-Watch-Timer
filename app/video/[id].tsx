@@ -1,8 +1,8 @@
+import React, { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { StyleSheet, View, Text, TouchableOpacity, Image } from "react-native";
 import { videoDetails } from "@/assets/details";
-import { useEffect, useState } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useRouter } from "expo-router";
 
@@ -12,6 +12,13 @@ export default function VideoScreen() {
   const [originalOrientation, setOriginalOrientation] = useState<ScreenOrientation.Orientation>();
   const back = require('@/assets/images/back.png');
   const video = videoDetails.find((v) => v.id === id);
+
+  const videoRef = useRef<VideoView>(null);
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.enterFullscreen();
+    }
+  }, []);
 
   if (!video) {
     return (

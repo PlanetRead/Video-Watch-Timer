@@ -3,10 +3,12 @@ import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from "react
 import { videoDetails } from "../../assets/details";
 import { useRouter } from "expo-router";
 import DropDownPicker from "react-native-dropdown-picker";
+import { Ionicons } from "@expo/vector-icons"; // PDF Icon
 
 const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');
 const translate_img = require('@/assets/images/translate.png');
+const pdf_img = require('@/assets/images/pdf_logo.png');
 
 interface VideoItem {
   id: string;
@@ -23,7 +25,6 @@ interface VideoLanguages {
 
 const VideoList = () => {
   const router = useRouter();
-
   const [open, setOpen] = useState(false);
   const [language, setLanguage] = useState("en");
   const [items] = useState([
@@ -66,11 +67,16 @@ const VideoList = () => {
     router.push(`/video/${item.id}?language=${itemLanguage}`);
   };
 
+  const handlePdfPress = (item: VideoItem) => {
+    const itemLanguage = videoLanguages[item.id];
+    router.push(`/pdf/${item.id}?language=${itemLanguage}`);
+  };
+
   return (
     <View className="bg-purple-700 h-full">
+      {/* Header Section */}
       <View className="flex flex-row justify-between p-4 items-center mt-12">
         <Image source={gov_logo} className="w-[50px] h-[50px]" />
-
         <DropDownPicker
           open={open}
           value={language}
@@ -82,7 +88,6 @@ const VideoList = () => {
           setValue={handleLanguageChange}
           containerStyle={{ width: 100, paddingVertical: 0 }}
         />
-
         <DropDownPicker
           open={levelOpen}
           value={level}
@@ -116,15 +121,25 @@ const VideoList = () => {
                 />
               </TouchableOpacity>
 
+            {/* Video Details along with pdf and translation option */}
               <View className="flex w-1/2 justify-start items-start p-4 gap-2">
-                <Text className="text-white text-left text-2xl font-semibold break-words">
+                <Text className="text-white text-left text-2xl w-full font-bold break-words">
                   {videoLanguages[item.id] === "en" ? item.english_title : item.punjabi_title}
                 </Text>
+                <View className="flex flex-row items-center gap-2">
+                  {/* Pdf Option goes here */}
+                <TouchableOpacity
+                  onPress={() => handlePdfPress(item)}
+                  className="bg-white p-2 rounded-full">
+                  <Image className="w-6 h-6" source={pdf_img} resizeMode="contain" />
+                </TouchableOpacity>
+                {/* Translate Option goes here */}
                 <TouchableOpacity
                   onPress={() => toggleVideoLanguage(item.id)}
                   className="bg-white p-2 rounded-full">
                   <Image className="w-6 h-6" source={translate_img} />
                 </TouchableOpacity>
+                </View>
               </View>
             </View>
           )}
@@ -138,7 +153,7 @@ const styles = StyleSheet.create({
   thumbnail: {
     resizeMode: "cover",
     borderRadius: 8,
-  }
+  },
 });
 
 export default VideoList;
