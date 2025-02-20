@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useEffect, useRef, useState } from "react";
+=======
+import React, { useEffect, useRef,useState } from "react";
+>>>>>>> e2053d1 (added splash screen)
 import { useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { StyleSheet, View, Text, TouchableOpacity, Image } from "react-native";
@@ -13,12 +17,6 @@ export default function VideoScreen() {
   const back = require('@/assets/images/back.png');
   const video = videoDetails.find((v) => v.id === id);
 
-  const videoRef = useRef<VideoView>(null);
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.enterFullscreen();
-    }
-  }, []);
 
   if (!video) {
     return (
