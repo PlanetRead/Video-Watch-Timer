@@ -47,6 +47,10 @@ export default function VideoScreen() {
   }, [originalOrientation]);
 
   const returnBackToHome = () => {
+    if (player) {
+      player.pause();
+    }
+
     if (originalOrientation) {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.DEFAULT);
     }
