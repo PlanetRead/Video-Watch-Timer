@@ -9,8 +9,10 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.hemanth-asp2.VideoWatchTimer"
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.planetread.videowatchtimer"
     },
     "web": {
       "bundler": "metro",
@@ -40,9 +42,7 @@
         {
           "initialOrientation": "DEFAULT"
         }
-      ],
-      "@config-plugins/react-native-blob-util",
-      "@config-plugins/react-native-pdf"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -52,17 +52,8 @@
         "origin": false
       },
       "eas": {
-        "projectId": "035efa62-7a9a-42a2-bf65-aee321fba071"
+        "projectId": "82a1e78d-7137-41a7-9c07-f21af7473e08"
       }
-    },
-    "android": {
-      "package": "com.hemanth_asp2.VideoWatchTimer",
-      "permissions": [
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.DOWNLOAD_WITHOUT_NOTIFICATION",
-        "android.permission.ACCESS_NETWORK_STATE"
-      ]
     }
   }
 }
