@@ -3,7 +3,6 @@ import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from "react
 import { videoDetails } from "../../assets/details";
 import { useRouter } from "expo-router";
 import DropDownPicker from "react-native-dropdown-picker";
-import { Ionicons } from "@expo/vector-icons"; // PDF Icon
 
 const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');

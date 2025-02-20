@@ -48,7 +48,6 @@ const PdfRead = () => {
         </TouchableOpacity>
         <Text className="text-xl font-bold">{language === "pa" ? video?.punjabi_title : video?.english_title}</Text>
         </View>
-
       {/* PDF Viewer */}
       <View className="flex-1">
         <Pdf
