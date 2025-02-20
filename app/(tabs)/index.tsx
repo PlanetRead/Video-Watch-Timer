@@ -7,6 +7,7 @@ import DropDownPicker from "react-native-dropdown-picker";
 const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');
 const translate_img = require('@/assets/images/translate.png');
+const pdf_img = require('@/assets/images/pdf.png');
 
 interface VideoItem {
   id: string;
@@ -120,11 +121,18 @@ const VideoList = () => {
                 <Text className="text-white text-left text-2xl font-semibold break-words">
                   {videoLanguages[item.id] === "en" ? item.english_title : item.punjabi_title}
                 </Text>
+                <View className="flex gap-2 flex-row">
                 <TouchableOpacity
                   onPress={() => toggleVideoLanguage(item.id)}
                   className="bg-white p-2 rounded-full">
                   <Image className="w-6 h-6" source={translate_img} />
                 </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => router.push(`/pdf/${item.id}?language=${videoLanguages[item.id]}`)}
+                  className="bg-white p-2 rounded-full">
+                  <Image className="w-6 h-6" source={pdf_img} />
+                </TouchableOpacity>
+                </View>
               </View>
             </View>
           )}
