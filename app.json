@@ -7,6 +7,7 @@
     "icon": "./assets/images/gov_logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": ["**/*"],
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -56,13 +57,13 @@
       }
     },
     "android": {
-      "package": "com.hemanth_asp2.VideoWatchTimer",
       "permissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.DOWNLOAD_WITHOUT_NOTIFICATION",
         "android.permission.ACCESS_NETWORK_STATE"
-      ]
+      ],
+      "package": "com.hemanth_asp2.VideoWatchTimer"
     }
   }
 }

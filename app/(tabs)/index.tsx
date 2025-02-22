@@ -3,6 +3,8 @@ import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from "react
 import { videoDetails } from "../../assets/details";
 import { useRouter } from "expo-router";
 import DropDownPicker from "react-native-dropdown-picker";
+import { WebView } from 'react-native-webview';
+
 
 const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');
@@ -140,6 +142,11 @@ const VideoList = () => {
                 </TouchableOpacity>
                 </View>
               </View>
+
+              <WebView
+     source={{ uri: 'https://expo.dev' }}
+      style={{ marginTop: 20,width: 100, height: 100 }}
+    />
             </View>
           )}
         />
