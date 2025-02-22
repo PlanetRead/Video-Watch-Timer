@@ -60,10 +60,6 @@
       "router": {
         "origin": false
       },
-      "eas": {
-        "projectId": "035efa62-7a9a-42a2-bf65-aee321fba071"
-      }
     },
-    "owner": "hemanth_asp2"
   }
 }
