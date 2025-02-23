@@ -12,7 +12,7 @@ interface VideoItem {
   id: string;
   english_title: string;
   punjabi_title: string;
-  thumbnail_en: any; 
+  thumbnail_en: any;
   thumbnail_punjabi: any;
   level: string;
 }
@@ -68,8 +68,9 @@ const VideoList = () => {
 
   return (
     <View className="bg-purple-700 h-full">
-      <View className="flex flex-row justify-between p-4 items-center mt-12">
-        <Image source={gov_logo} className="w-[50px] h-[50px]" />
+      <View className="flex flex-row justify-between p-4 items-center mt-12 gap-4">
+        <Image source={gov_logo} className="w-[50px] h-[60px] flex-1"
+          style={{ resizeMode: "contain" }} />
 
         <DropDownPicker
           open={open}
@@ -80,7 +81,8 @@ const VideoList = () => {
             if (levelOpen) setLevelOpen(false);
           }}
           setValue={handleLanguageChange}
-          containerStyle={{ width: 100, paddingVertical: 0 }}
+          containerStyle={{ maxWidth: 100, paddingVertical: 0, flex: 2, paddingHorizontal: 0 }}
+          textStyle={{ fontSize: 13 }}
         />
 
         <DropDownPicker
@@ -92,10 +94,12 @@ const VideoList = () => {
             if (open) setOpen(false);
           }}
           setValue={setLevel}
-          containerStyle={{ width: 100, paddingVertical: 0 }}
+          containerStyle={{ maxWidth: 100, paddingVertical: 0, flex: 2, paddingHorizontal: 0 }}
+          textStyle={{ fontSize: 13 }}
         />
 
-        <Image source={billion_readers} className="w-[50px] h-[50px]" />
+        <Image source={billion_readers} className="w-[50px] h-[50px] flex-1"
+          style={{ resizeMode: "contain" }} />
       </View>
 
       <View>
