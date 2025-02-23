@@ -104,7 +104,7 @@ const VideoList = () => {
           data={videoDetails.filter(item => level === "all" || item.level === level)}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View className="flex flex-row items-center justify-between p-4 border-b-[1px] border-gray-300">
+            <View className="flex flex-row items-center justify-between p-4 border-b-[1px] border-gray-300 min-h-[150px]">
               <TouchableOpacity
                 className="w-1/2"
                 onPress={() => handleVideoPress(item)}
@@ -117,7 +117,7 @@ const VideoList = () => {
               </TouchableOpacity>
 
               <View className="flex w-1/2 justify-start items-start p-4 gap-2">
-                <Text className="text-white text-left text-2xl font-semibold break-words">
+                <Text className="text-white text-left text-2xl font-semibold break-words min-h-16">
                   {videoLanguages[item.id] === "en" ? item.english_title : item.punjabi_title}
                 </Text>
                 <TouchableOpacity
