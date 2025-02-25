@@ -9,7 +9,7 @@ import { WebView } from 'react-native-webview';
 const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');
 const translate_img = require('@/assets/images/translate.png');
-const pdf_img = require('@/assets/images/pdf_logo.png');
+const pdf_img = require('@/assets/images/pdf.png');
 
 interface VideoItem {
   id: string;
@@ -44,6 +44,7 @@ const VideoList = () => {
     { label: "Level 1", value: "1" },
     { label: "Level 2", value: "2" },
     { label: "Level 3", value: "3" },
+    { label: "Level 4", value: "4" },
   ]);
 
   const handleLanguageChange = (callback: (prevValue: string) => string) => {
@@ -74,10 +75,10 @@ const VideoList = () => {
   };
 
   return (
-    <View className="bg-purple-700 h-full">
-      {/* Header Section */}
-      <View className="flex flex-row justify-between p-4 items-center mt-12">
-        <Image source={gov_logo} className="w-[50px] h-[50px]" />
+    <View className="bg-purple-700 h-full flex-1">
+      <View className="flex flex-row justify-between p-4 items-center mt-12 gap-4">
+        <Image source={gov_logo} className="w-[50px] h-[60px] flex-1"
+          style={{ resizeMode: "contain" }} />
         <DropDownPicker
           open={open}
           value={language}
@@ -87,7 +88,8 @@ const VideoList = () => {
             if (levelOpen) setLevelOpen(false);
           }}
           setValue={handleLanguageChange}
-          containerStyle={{ width: 100, paddingVertical: 0 }}
+          containerStyle={{ maxWidth: 100, paddingVertical: 0, flex: 2, paddingHorizontal: 0 }}
+          textStyle={{ fontSize: 13 }}
         />
         <DropDownPicker
           open={levelOpen}
@@ -98,19 +100,21 @@ const VideoList = () => {
             if (open) setOpen(false);
           }}
           setValue={setLevel}
-          containerStyle={{ width: 100, paddingVertical: 0 }}
+          containerStyle={{ maxWidth: 100, paddingVertical: 0, flex: 2, paddingHorizontal: 0 }}
+          textStyle={{ fontSize: 13 }}
         />
 
-        <Image source={billion_readers} className="w-[50px] h-[50px]" />
+<Image source={billion_readers} className="w-[50px] h-[50px] flex-1"
+          style={{ resizeMode: "contain" }} />
       </View>
 
       <View>
         <FlatList
-          className="overflow-y-scroll"
+          contentContainerStyle={{ paddingBottom: 140 }}
           data={videoDetails.filter(item => level === "all" || item.level === level)}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View className="flex flex-row items-center justify-between p-4 border-b-[1px] border-gray-300">
+            <View className="flex flex-row items-center justify-between p-4 border-b-[1px] border-gray-300 min-h-[150px]">
               <TouchableOpacity
                 className="w-1/2"
                 onPress={() => handleVideoPress(item)}
@@ -127,27 +131,20 @@ const VideoList = () => {
                 <Text className="text-white text-left text-2xl w-full font-bold break-words">
                   {videoLanguages[item.id] === "en" ? item.english_title : item.punjabi_title}
                 </Text>
-                <View className="flex flex-row items-center gap-2">
-                  {/* Pdf Option goes here */}
-                <TouchableOpacity
-                  onPress={() => handlePdfPress(item)}
-                  className="bg-white p-2 rounded-full">
-                  <Image className="w-6 h-6" source={pdf_img} resizeMode="contain" />
-                </TouchableOpacity>
-                {/* Translate Option goes here */}
+                <View className="flex gap-2 flex-row">
                 <TouchableOpacity
                   onPress={() => toggleVideoLanguage(item.id)}
                   className="bg-white p-2 rounded-full">
-                  <Image className="w-6 h-6" source={translate_img} />
+                  <Image className="w-6 h-6" source={translate_img} style={{tintColor: 'black'}} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => router.push(`/pdf/${item.id}?language=${videoLanguages[item.id]}`)}
+                  className="bg-white p-2 rounded-full">
+                  <Image className="w-6 h-6" source={pdf_img} style={{tintColor: 'black'}} />
                 </TouchableOpacity>
                 </View>
               </View>
-
-              <WebView
-     source={{ uri: 'https://expo.dev' }}
-      style={{ marginTop: 20,width: 100, height: 100 }}
-    />
-            </View>
+              </View>
           )}
         />
       </View>

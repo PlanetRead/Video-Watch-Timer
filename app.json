@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "VideoWatchTimer",
+    "name": "Bird",
     "slug": "VideoWatchTimer",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/gov_logo.png",
+    "icon": "./assets/images/bird-logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "assetBundlePatterns": ["**/*"],
@@ -20,15 +20,6 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/gov_logo.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ],
       [
         "expo-video",
         {

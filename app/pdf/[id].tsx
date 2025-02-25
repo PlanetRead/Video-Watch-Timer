@@ -58,13 +58,13 @@ const PdfViewer = () => {
     <View style={{ flex: 1, backgroundColor: '#f2f2f2' }}>
       {/* Header with Back Button and Title */}
       <View className="flex-row items-center justify-start p-2 bg-white shadow-2xl pt-12 elevation-lg">
-  <TouchableOpacity onPress={() => router.push("/")} className="p-2">
+  {/* <TouchableOpacity onPress={() => router.push("/")} className="p-2">
     <Image 
       source={back} 
       className="w-6 h-6" 
       resizeMode="contain" 
     />
-  </TouchableOpacity>
+  </TouchableOpacity> */}
   <Text className="text-lg font-bold text-black ml-2">
     {title || 'PDF Viewer'}
   </Text>

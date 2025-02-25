@@ -79,10 +79,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "black",
+    padding: 0,
+    objectFit: 'contain',
+    paddingBottom: 15
   },
   video: {
     width: "100%",
-    height: "100%",
+    height: "110%",
   },
   errorText: {
     fontSize: 18,
