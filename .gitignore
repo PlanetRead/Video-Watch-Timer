@@ -126,5 +126,5 @@ yarn-error.*
 
 # @end expo-cli
 
-assets/videos
-assets/videos/english
+# assets/videos
+# assets/videos/english

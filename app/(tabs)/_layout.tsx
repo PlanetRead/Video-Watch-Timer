@@ -8,7 +8,6 @@ export default function AppLayout() {
         headerShown: false,
       }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="explore" />
     </Stack>
   );
 }
