@@ -14,7 +14,7 @@ interface VideoItem {
   id: string;
   english_title: string;
   punjabi_title: string;
-  thumbnail_en: any; 
+  thumbnail_en: any;
   thumbnail_punjabi: any;
   level: string;
 }
@@ -44,6 +44,7 @@ const VideoList = () => {
     { label: "Level 1", value: "1" },
     { label: "Level 2", value: "2" },
     { label: "Level 3", value: "3" },
+    { label: "Level 4", value: "4" },
   ]);
 
   const handleLanguageChange = (callback: (prevValue: string) => string) => {
@@ -106,7 +107,7 @@ const VideoList = () => {
 
       <View>
         <FlatList
-          className="overflow-y-scroll"
+          contentContainerStyle={{ paddingBottom: 140 }}
           data={videoDetails.filter(item => level === "all" || item.level === level)}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
@@ -126,10 +127,16 @@ const VideoList = () => {
                 <Text className="text-white text-left text-2xl font-semibold break-words min-h-16">
                   {videoLanguages[item.id] === "en" ? item.english_title : item.punjabi_title}
                 </Text>
+                <View className="flex gap-2 flex-row">
                 <TouchableOpacity
                   onPress={() => toggleVideoLanguage(item.id)}
                   className="bg-white p-2 rounded-full">
-                  <Image className="w-6 h-6" source={translate_img} />
+                  <Image className="w-6 h-6" source={translate_img} style={{tintColor: 'black'}} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => router.push(`/pdf/${item.id}?language=${videoLanguages[item.id]}`)}
+                  className="bg-white p-2 rounded-full">
+                  <Image className="w-6 h-6" source={pdf_img} style={{tintColor: 'black'}} />
                 </TouchableOpacity>
               </View>
 
@@ -138,6 +145,9 @@ const VideoList = () => {
       style={{ marginTop: 20,width: 100, height: 100 }}
     />
             </View>
+                </View>
+              </View>
+              </View>
           )}
         />
       </View>
