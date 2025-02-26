@@ -9,12 +9,13 @@ import { WebView } from 'react-native-webview';
 const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');
 const translate_img = require('@/assets/images/translate.png');
+const pdf_img = require('@/assets/images/pdf.png');
 
 interface VideoItem {
   id: string;
   english_title: string;
   punjabi_title: string;
-  thumbnail_en: any;
+  thumbnail_en: any; 
   thumbnail_punjabi: any;
   level: string;
 }
@@ -25,7 +26,6 @@ interface VideoLanguages {
 
 const VideoList = () => {
   const router = useRouter();
-
   const [open, setOpen] = useState(false);
   const [language, setLanguage] = useState("en");
   const [items] = useState([
@@ -69,12 +69,16 @@ const VideoList = () => {
     router.push(`/video/${item.id}?language=${itemLanguage}`);
   };
 
+  const handlePdfPress = (item: VideoItem) => {
+    const itemLanguage = videoLanguages[item.id];
+    router.push(`/pdf/${item.id}?language=${itemLanguage}`);
+  };
+
   return (
-    <View className="bg-purple-700 h-full">
+    <View className="bg-purple-700 h-full flex-1">
       <View className="flex flex-row justify-between p-4 items-center mt-12 gap-4">
         <Image source={gov_logo} className="w-[50px] h-[60px] flex-1"
           style={{ resizeMode: "contain" }} />
-
         <DropDownPicker
           open={open}
           value={language}
@@ -87,7 +91,6 @@ const VideoList = () => {
           containerStyle={{ maxWidth: 100, paddingVertical: 0, flex: 2, paddingHorizontal: 0 }}
           textStyle={{ fontSize: 13 }}
         />
-
         <DropDownPicker
           open={levelOpen}
           value={level}
@@ -101,7 +104,7 @@ const VideoList = () => {
           textStyle={{ fontSize: 13 }}
         />
 
-        <Image source={billion_readers} className="w-[50px] h-[50px] flex-1"
+<Image source={billion_readers} className="w-[50px] h-[50px] flex-1"
           style={{ resizeMode: "contain" }} />
       </View>
 
@@ -123,8 +126,9 @@ const VideoList = () => {
                 />
               </TouchableOpacity>
 
+            {/* Video Details along with pdf and translation option */}
               <View className="flex w-1/2 justify-start items-start p-4 gap-2">
-                <Text className="text-white text-left text-2xl font-semibold break-words min-h-16">
+                <Text className="text-white text-left text-2xl w-full font-bold break-words">
                   {videoLanguages[item.id] === "en" ? item.english_title : item.punjabi_title}
                 </Text>
                 <View className="flex gap-2 flex-row">
@@ -138,13 +142,6 @@ const VideoList = () => {
                   className="bg-white p-2 rounded-full">
                   <Image className="w-6 h-6" source={pdf_img} style={{tintColor: 'black'}} />
                 </TouchableOpacity>
-              </View>
-
-              <WebView
-     source={{ uri: 'https://expo.dev' }}
-      style={{ marginTop: 20,width: 100, height: 100 }}
-    />
-            </View>
                 </View>
               </View>
               </View>
@@ -159,7 +156,7 @@ const styles = StyleSheet.create({
   thumbnail: {
     resizeMode: "cover",
     borderRadius: 8,
-  }
+  },
 });
 
 export default VideoList;
