@@ -70,8 +70,9 @@ const VideoList = () => {
 
   return (
     <View className="bg-purple-700 h-full">
-      <View className="flex flex-row justify-between p-4 items-center mt-12">
-        <Image source={gov_logo} className="w-[50px] h-[50px]" />
+      <View className="flex flex-row justify-between p-4 items-center mt-12 gap-4">
+        <Image source={gov_logo} className="w-[50px] h-[60px] flex-1"
+          style={{ resizeMode: "contain" }} />
 
         <DropDownPicker
           open={open}
@@ -82,7 +83,8 @@ const VideoList = () => {
             if (levelOpen) setLevelOpen(false);
           }}
           setValue={handleLanguageChange}
-          containerStyle={{ width: 100, paddingVertical: 0 }}
+          containerStyle={{ maxWidth: 100, paddingVertical: 0, flex: 2, paddingHorizontal: 0 }}
+          textStyle={{ fontSize: 13 }}
         />
 
         <DropDownPicker
@@ -94,10 +96,12 @@ const VideoList = () => {
             if (open) setOpen(false);
           }}
           setValue={setLevel}
-          containerStyle={{ width: 100, paddingVertical: 0 }}
+          containerStyle={{ maxWidth: 100, paddingVertical: 0, flex: 2, paddingHorizontal: 0 }}
+          textStyle={{ fontSize: 13 }}
         />
 
-        <Image source={billion_readers} className="w-[50px] h-[50px]" />
+        <Image source={billion_readers} className="w-[50px] h-[50px] flex-1"
+          style={{ resizeMode: "contain" }} />
       </View>
 
       <View>
@@ -106,7 +110,7 @@ const VideoList = () => {
           data={videoDetails.filter(item => level === "all" || item.level === level)}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View className="flex flex-row items-center justify-between p-4 border-b-[1px] border-gray-300">
+            <View className="flex flex-row items-center justify-between p-4 border-b-[1px] border-gray-300 min-h-[150px]">
               <TouchableOpacity
                 className="w-1/2"
                 onPress={() => handleVideoPress(item)}
@@ -119,7 +123,7 @@ const VideoList = () => {
               </TouchableOpacity>
 
               <View className="flex w-1/2 justify-start items-start p-4 gap-2">
-                <Text className="text-white text-left text-2xl font-semibold break-words">
+                <Text className="text-white text-left text-2xl font-semibold break-words min-h-16">
                   {videoLanguages[item.id] === "en" ? item.english_title : item.punjabi_title}
                 </Text>
                 <TouchableOpacity
