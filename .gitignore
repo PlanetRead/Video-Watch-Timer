@@ -78,3 +78,5 @@ yarn-error.*
 *.tsbuildinfo
 
 # @end expo-cli
+
+assets/videos
