@@ -3,13 +3,39 @@ import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from "react
 import { videoDetails } from "../../assets/details";
 import { useRouter } from "expo-router";
 import DropDownPicker from "react-native-dropdown-picker";
-import { WebView } from 'react-native-webview';
+import * as Application from 'expo-application';
+import { Platform } from 'expo-modules-core';
+import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
+
 
 
 const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');
 const translate_img = require('@/assets/images/translate.png');
 const pdf_img = require('@/assets/images/pdf.png');
+
+
+const getDeviceId = async () => {
+  if (Platform.OS === 'android') {
+    // for SDK < 50
+    // return Application.androidId;
+ 
+    return Application.getAndroidId();
+
+  } else {
+    let deviceId = await SecureStore.getItemAsync('deviceId');
+
+    if (!deviceId) {
+      deviceId = Constants.deviceId; //or generate uuid
+       if(deviceId) await SecureStore.setItemAsync('deviceId', deviceId);
+    }
+
+    return deviceId;
+  }
+}
+
+console.log(getDeviceId());
 
 interface VideoItem {
   id: string;

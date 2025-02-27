@@ -5,8 +5,11 @@ import { videoDetails } from "@/assets/details";
 import { useEffect, useState } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useRouter } from "expo-router";
+import { useKeepAwake } from 'expo-keep-awake';
+
 
 export default function VideoScreen() {
+  useKeepAwake();
   const router = useRouter();
   const { id, language } = useLocalSearchParams<{ id?: string; language?: string }>();
   const [originalOrientation, setOriginalOrientation] = useState<ScreenOrientation.Orientation>();
