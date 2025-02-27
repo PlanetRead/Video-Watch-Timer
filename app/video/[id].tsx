@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useRouter } from "expo-router";
 import { useKeepAwake } from 'expo-keep-awake';
+import { useEventListener } from "expo";
 
 
 export default function VideoScreen() {
@@ -49,7 +50,30 @@ export default function VideoScreen() {
     };
   }, [originalOrientation]);
 
+  useEffect(() => {
+    // Video Title
+    console.log(`Video Title: ${video.english_title}`);
+
+    // Update the view count
+    console.log("View Count ++");
+
+    // Update the view count based on the language
+    if (language === 'pa') {
+      console.log("Punjabi View Count ++");
+    }
+    else {
+      console.log("English View Count ++");
+    }
+
+  }, []);
+
   const returnBackToHome = () => {
+
+    // Get the watched time
+    const watchedTime = Math.floor(player.currentTime);
+    console.log(`Watched Till: ${watchedTime} seconds`);
+    console.log(`Update Watch Time in DB by ${watchedTime} seconds`);
+
     if (player) {
       player.pause();
     }
