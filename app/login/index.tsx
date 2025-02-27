@@ -16,7 +16,7 @@ const index = () => {
 
   const handleLogin = () => {
     if (adminId === id && password === pass) {
-      router.push('/(tabs)');
+      router.push('/dashboard');
     } else {
       Alert.alert('Error', 'Invalid credentials');
     }
