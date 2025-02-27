@@ -54,6 +54,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="video" options={{ headerShown: false }} />
         <Stack.Screen name="pdf" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="light" />
     </>

@@ -128,3 +128,5 @@ yarn-error.*
 
 assets/videos
 assets/videos.zip
+
+.env

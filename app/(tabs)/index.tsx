@@ -112,9 +112,11 @@ const VideoList = () => {
 
   return (
     <View className="bg-purple-700 h-full flex-1">
-      <View className="flex flex-row justify-between p-4 items-center mt-12 gap-4">
-        <Image source={gov_logo} className="w-[50px] h-[60px] flex-1"
-          style={{ resizeMode: "contain" }} />
+      <View className="flex flex-row p-4 items-center mt-12 justify-evenly gap-3">
+        <TouchableOpacity className="" onPress={() => router.push(`/login`)}>
+          <Image source={gov_logo} className="w-[50px] h-[60px] flex-1"
+            style={{ resizeMode: "contain" }} />
+        </TouchableOpacity>
         <DropDownPicker
           open={open}
           value={language}
