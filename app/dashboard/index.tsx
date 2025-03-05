@@ -1,7 +1,7 @@
 import { View, Text, FlatList } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getVideoAnalyticsByUser } from '../database/database';
+import { getVideoAnalyticsByUser,getUsers } from '../database/database';
 import { useSQLiteContext } from 'expo-sqlite';
 
 // Define type for analytics data
@@ -20,11 +20,29 @@ type AnalyticsData = {
 const AnalyticsDashboard = () => {
   const db = useSQLiteContext();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const users = await getUsers(db); // Fetch all users
+        if (users.length > 0) {
+          setUserId(users[0].id); // Set the first user's ID
+        }
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+      }
+    };
+
+    fetchUserDetails();
+  }, [db]);
+
+  useEffect(() => {
+    if (!userId) return;
+
     const fetchDetails = async () => {
       try {
-        const data: AnalyticsData[] = await getVideoAnalyticsByUser(db, 'e9e34dfe52e0d39b');
+        const data: AnalyticsData[] = await getVideoAnalyticsByUser(db, userId);
         setAnalyticsData(data);
       } catch (error) {
         console.error('Error fetching analytics:', error);
@@ -32,7 +50,7 @@ const AnalyticsDashboard = () => {
     };
 
     fetchDetails();
-  }, [db]); // Ensures it only runs when `db` changes
+  }, [db, userId]);
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-purple-700 p-4">

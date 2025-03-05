@@ -87,6 +87,7 @@ const VideoList = () => {
         const users = await getUsers(db);
         if (users.length === 0) {
           await createUser(db, deviceId, role,2005); // need to check the pin
+          // console.log(deviceId);
         }
       } catch (error) {
         console.error("Error initializing user:", error);
