@@ -1,4 +1,4 @@
-import { View, Text, FlatList, Image, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, TextInput } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getVideoAnalyticsByUser, getUsers } from '../database/database';
@@ -6,6 +6,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { Dimensions } from 'react-native';
 import { videoDetails } from "../../assets/details";
 import DropDownPicker from 'react-native-dropdown-picker';
+import { Ionicons } from '@expo/vector-icons';
 
 // Define type for analytics data
 type AnalyticsData = {
@@ -111,6 +112,21 @@ const AnalyticsDashboard = () => {
     setAnalyticsData(sortedData);
   }, [sortoption]);
 
+  const [filteredData, setFilteredData] = useState<AnalyticsData[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredData(analyticsData);
+    } else {
+      const filtered = analyticsData.filter((item) =>
+      (item.english_title?.toLowerCase().includes(searchQuery.toLowerCase())
+        || item.punjabi_title?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      );
+      setFilteredData(filtered);
+    }
+  }, [searchQuery, analyticsData]);
   return (
     <SafeAreaView style={{ flex: 1, minHeight: height }} className="bg-white p-4">
       <View className="flex-1">
@@ -118,11 +134,35 @@ const AnalyticsDashboard = () => {
 
         <TouchableOpacity className="bg-purple-700 my-4 p-3 mt-4 w-full">
           <Text className="text-white text-center font-bold">EXPORT</Text>
-        </TouchableOpacity> 
+        </TouchableOpacity>
 
-        <View className='flex flex-row justify-between'>
+        <View
+        style={{
+          borderColor: '#d5d5d9',
+          backgroundColor: '#ECE6F0',
+        }}
+         className="border px-4 mb-3 flex-row items-center bg-white">
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color="gray" />
+            </TouchableOpacity>
+          )}
+
+          <TextInput
+            className="flex-1 text-black"
+            placeholder="Search by title"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+
+          <TouchableOpacity className="pl-2">
+            <Ionicons name="search" size={20} color="purple" />
+          </TouchableOpacity>
+        </View>
+
+        <View className='flex flex-row justify-between items-end'>
           <Text className='text-2xl font-black'>Videos</Text>
-          <View className='flex flex-row bg-yellow-200 w-[200px]'>
+          <View className='flex flex-row w-[205px]'>
             <Text className="bg-purple-700 text-white text-sm text-center py-[0.6rem] flex items-center justify-center w-[80px] h-[35px]">
               Sort By
             </Text>
@@ -139,7 +179,6 @@ const AnalyticsDashboard = () => {
               textStyle={{ fontSize: 12 }}
               arrowIconStyle={{ marginHorizontal: -5 }}
               modalAnimationType='slide'
-              // style={{  borderRadius: 0, padding:-20 , margin:0}}
               placeholder={"Select"}
               style={{
                 borderWidth: 1,
@@ -149,7 +188,6 @@ const AnalyticsDashboard = () => {
                 paddingHorizontal: 5,
                 minHeight: 35,
               }}
-              tickIconContainerStyle={{ backgroundColor: "red" }}
               dropDownContainerStyle={{
                 backgroundColor: '#ECE6F0',
                 borderWidth: 1,
@@ -162,7 +200,7 @@ const AnalyticsDashboard = () => {
         </View>
 
         <FlatList
-          data={analyticsData}
+          data={filteredData}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
             <View className="flex-row justify-between border-b border-white py-2">
