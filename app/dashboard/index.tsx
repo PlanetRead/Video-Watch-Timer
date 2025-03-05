@@ -7,6 +7,8 @@ import { Dimensions } from 'react-native';
 import { videoDetails } from "../../assets/details";
 import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
+import PieChart from 'react-native-pie-chart'
+import { StyleSheet } from 'react-native';
 
 // Define type for analytics data
 type AnalyticsData = {
@@ -48,12 +50,23 @@ const AnalyticsDashboard = () => {
     fetchUserDetails();
   }, [db]);
 
+  const [totalTime, setTotalTime] = useState(0);
+  const [totalViews, setTotalViews] = useState(0);
+
   useEffect(() => {
     if (!userId) return;
 
     const fetchDetails = async () => {
       try {
         const data: AnalyticsData[] = await getVideoAnalyticsByUser(db, userId);
+
+        // Calculate total time across all videos
+        const total = data.reduce((sum, item) => sum + (item.total_time_day || 0), 0);
+        setTotalTime(total);
+
+        // Calculate total views across all videos
+        const views = data.reduce((sum, item) => sum + (item.total_views_day || 0), 0);
+        setTotalViews(views);
 
         // Merge analytics data with video details
         const mergedData = data.map((item) => {
@@ -84,12 +97,6 @@ const AnalyticsDashboard = () => {
     { label: "Level 2", value: "2" },
     { label: "Level 3", value: "3" },
   ]);
-
-  // Date Dropdown State
-  const [fromDate, setFromDate] = useState(new Date());
-  const [toDate, setToDate] = useState(new Date());
-  const [showFromDatePicker, setShowFromDatePicker] = useState(false);
-  const [showToDatePicker, setShowToDatePicker] = useState(false);
 
   // Sort Dropdown State
   const [open, setOpen] = useState(false);
@@ -148,12 +155,44 @@ const AnalyticsDashboard = () => {
     }
 
     setFilteredData(result);
-  }, [searchQuery, analyticsData, selectedLevel, fromDate, toDate]);
+  }, [searchQuery, analyticsData, selectedLevel]);
+
+  const widthAndHeight = 150;
+
+  const series = [
+    { value: 430, color: '#7e22ce' },
+    { value: 321, color: '#a347f2' },
+    { value: 185, color: '#c76aff' },
+    { value: 123, color: '#ed8cff' },
+  ]
 
   return (
-    <SafeAreaView style={{ flex: 1, minHeight: height }} className="bg-white p-4">
+    <SafeAreaView style={{ flex: 1, minHeight: height, maxHeight:"auto" }} className="bg-white p-4">
       <View className="flex-1">
         <Text className="text-black text-2xl font-black text-center mb-4">Analytics</Text>
+
+        <View className='flex flex-row gap-4 justify-around'>
+          <View>
+            <PieChart widthAndHeight={widthAndHeight} series={series} cover={0.8} />
+            <View
+              style={styles.gauge}
+            >
+              <Text className='text-purple-700 text-2xl font-extrabold'>{totalViews}</Text>
+              <Text className='text-black text-base'>Views</Text>
+            </View>
+          </View>
+
+          <View>
+            <PieChart widthAndHeight={widthAndHeight} series={series} cover={0.8} />
+            <View
+              style={styles.gauge}
+            >
+              <Text className='text-purple-700 text-2xl font-extrabold'>{totalTime}</Text>
+              <Text className='text-black text-base'>Watch Time</Text>
+            </View>
+          </View>
+
+        </View>
 
         <TouchableOpacity className="bg-purple-700 my-4 p-3 mt-4 w-full">
           <Text className="text-white text-center font-bold">EXPORT</Text>
@@ -196,7 +235,7 @@ const AnalyticsDashboard = () => {
             dropDownContainerStyle={{
               backgroundColor: '#ECE6F0',
               borderColor: '#d5d5d9',
-              zIndex:1000,
+              zIndex: 1000,
               borderRadius: 0,
             }}
           />
@@ -226,7 +265,7 @@ const AnalyticsDashboard = () => {
           </TouchableOpacity>
         </View>
 
-        <View className='flex flex-row justify-between items-end'>
+        <View className='flex flex-row justify-between items-end mb-2'>
           <Text className='text-2xl font-black'>Videos</Text>
           <View className='flex flex-row w-[205px]'>
             <Text className="bg-purple-700 text-white text-sm text-center py-[0.6rem] flex items-center justify-center w-[80px] h-[35px]">
@@ -241,7 +280,7 @@ const AnalyticsDashboard = () => {
                 const newValue = callback(sortoption);
                 setSortOption(newValue);
               }}
-              containerStyle={{ maxWidth: 125, alignSelf: "center", marginBottom: 0}}
+              containerStyle={{ maxWidth: 125, alignSelf: "center", marginBottom: 0 }}
               textStyle={{ fontSize: 12 }}
               arrowIconStyle={{ marginHorizontal: -5 }}
               modalAnimationType='slide'
@@ -253,7 +292,7 @@ const AnalyticsDashboard = () => {
                 borderRadius: 0,
                 paddingHorizontal: 5,
                 minHeight: 35,
-                zIndex:100
+                zIndex: 100
               }}
               dropDownContainerStyle={{
                 backgroundColor: '#ECE6F0',
@@ -319,3 +358,17 @@ const AnalyticsDashboard = () => {
 
 
 export default AnalyticsDashboard;
+
+
+export const styles = StyleSheet.create({
+  container: { alignItems: 'center', justifyContent: 'center', height: 1050 },
+  gauge: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    alignItems: 'center',
+    justifyContent: 'center',
+    display: 'flex',
+    gap: 0
+  }
+})
