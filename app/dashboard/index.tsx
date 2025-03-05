@@ -69,14 +69,29 @@ const AnalyticsDashboard = () => {
 
     fetchDetails();
 
-    console.log("videoDetails:", videoDetails);
-
   }, [db, userId]);
 
 
   const { height } = Dimensions.get("window");
 
 
+  // Level Dropdown State
+  const [levelOpen, setLevelOpen] = useState(false);
+  const [selectedLevel, setSelectedLevel] = useState("All levels");
+  const [levelItems] = useState([
+    { label: "All Levels", value: "All levels" },
+    { label: "Level 1", value: "1" },
+    { label: "Level 2", value: "2" },
+    { label: "Level 3", value: "3" },
+  ]);
+
+  // Date Dropdown State
+  const [fromDate, setFromDate] = useState(new Date());
+  const [toDate, setToDate] = useState(new Date());
+  const [showFromDatePicker, setShowFromDatePicker] = useState(false);
+  const [showToDatePicker, setShowToDatePicker] = useState(false);
+
+  // Sort Dropdown State
   const [open, setOpen] = useState(false);
   const [sortoption, setSortOption] = useState<string | null>(null);
   const [items] = useState([
@@ -110,23 +125,31 @@ const AnalyticsDashboard = () => {
     }
 
     setAnalyticsData(sortedData);
-  }, [sortoption]);
+  }, [sortoption, analyticsData]);
 
   const [filteredData, setFilteredData] = useState<AnalyticsData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredData(analyticsData);
-    } else {
-      const filtered = analyticsData.filter((item) =>
+    let result = [...analyticsData];
+
+    // Search Filter
+    if (searchQuery.trim() !== "") {
+      result = result.filter((item) =>
       (item.english_title?.toLowerCase().includes(searchQuery.toLowerCase())
         || item.punjabi_title?.toLowerCase().includes(searchQuery.toLowerCase())
       )
       );
-      setFilteredData(filtered);
     }
-  }, [searchQuery, analyticsData]);
+
+    // Level Filter
+    if (selectedLevel !== "All levels") {
+      result = result.filter((item) => item.level?.toString() === selectedLevel.toString());
+    }
+
+    setFilteredData(result);
+  }, [searchQuery, analyticsData, selectedLevel, fromDate, toDate]);
+
   return (
     <SafeAreaView style={{ flex: 1, minHeight: height }} className="bg-white p-4">
       <View className="flex-1">
@@ -137,45 +160,54 @@ const AnalyticsDashboard = () => {
         </TouchableOpacity>
 
 
-        <View>
-        <DropDownPicker
-              open={open}
-              value={sortoption}
-              items={items}
-              setOpen={setOpen}
-              setValue={(callback) => {
-                const newValue = callback(sortoption);
-                setSortOption(newValue);
-              }}
-              containerStyle={{ maxWidth: 125, alignSelf: "center", marginBottom: 0, paddingHorizontal: 0, padding: 0, paddingTop: 0 }}
-              textStyle={{ fontSize: 12 }}
-              arrowIconStyle={{ marginHorizontal: -5 }}
-              modalAnimationType='slide'
-              placeholder={"Select"}
-              style={{
-                borderWidth: 1,
-                borderColor: '#d5d5d9',
-                backgroundColor: '#ECE6F0',
-                borderRadius: 0,
-                paddingHorizontal: 5,
-                minHeight: 35,
-              }}
-              dropDownContainerStyle={{
-                backgroundColor: '#ECE6F0',
-                borderWidth: 1,
-                borderColor: '#d5d5d9',
-                borderRadius: 0,
-                gap: 10
-              }}
-            />
+
+        {/* Level and Date Dropdowns */}
+        <View className="flex-row justify-between mb-4">
+
+          <View className='flex flex-row gap-2 p-2'
+            style={{
+              borderWidth: 1,
+              borderColor: '#d5d5d9',
+              backgroundColor: '#ECE6F0',
+            }}>
+
+            <Text>Filter</Text>
+
+            <Ionicons name="filter" size={20} color="gray" />
+          </View>
+
+          {/* Level Dropdown */}
+          <DropDownPicker
+            open={levelOpen}
+            value={selectedLevel}
+            items={levelItems}
+            setOpen={setLevelOpen}
+            setValue={(newValue) => setSelectedLevel(newValue)}
+            containerStyle={{ maxWidth: 125 }}
+            placeholder="Select Level"
+            style={{
+              borderWidth: 1,
+              borderColor: '#d5d5d9',
+              backgroundColor: '#ECE6F0',
+              borderRadius: 0,
+              paddingHorizontal: 5,
+              minHeight: 35,
+            }}
+            dropDownContainerStyle={{
+              backgroundColor: '#ECE6F0',
+              borderColor: '#d5d5d9',
+              zIndex:1000,
+              borderRadius: 0,
+            }}
+          />
         </View>
 
         <View
-        style={{
-          borderColor: '#d5d5d9',
-          backgroundColor: '#ECE6F0',
-        }}
-         className="border px-4 mb-3 flex-row items-center bg-white">
+          style={{
+            borderColor: '#d5d5d9',
+            backgroundColor: '#ECE6F0',
+          }}
+          className="border px-4 mb-3 flex-row items-center bg-white">
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
               <Ionicons name="close-circle" size={20} color="gray" />
@@ -209,7 +241,7 @@ const AnalyticsDashboard = () => {
                 const newValue = callback(sortoption);
                 setSortOption(newValue);
               }}
-              containerStyle={{ maxWidth: 125, alignSelf: "center", marginBottom: 0, paddingHorizontal: 0, padding: 0, paddingTop: 0 }}
+              containerStyle={{ maxWidth: 125, alignSelf: "center", marginBottom: 0}}
               textStyle={{ fontSize: 12 }}
               arrowIconStyle={{ marginHorizontal: -5 }}
               modalAnimationType='slide'
@@ -221,13 +253,14 @@ const AnalyticsDashboard = () => {
                 borderRadius: 0,
                 paddingHorizontal: 5,
                 minHeight: 35,
+                zIndex:100
               }}
               dropDownContainerStyle={{
                 backgroundColor: '#ECE6F0',
                 borderWidth: 1,
                 borderColor: '#d5d5d9',
                 borderRadius: 0,
-                gap: 10
+                gap: 10,
               }}
             />
           </View>
@@ -254,6 +287,10 @@ const AnalyticsDashboard = () => {
                     {item.language === "en" ? item.english_title : item.punjabi_title}
                   </Text>
                   <View className='flex gap-0'>
+                    <Text className="text-sm font-bold text-purple-700">
+                      Level: {item.level}
+                    </Text>
+
                     <Text className="text-sm font-bold text-purple-700">
                       Watch Time: {item.total_time_day} s
                     </Text>
