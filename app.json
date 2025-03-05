@@ -7,7 +7,9 @@
     "icon": "./assets/images/bird-logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -43,7 +45,8 @@
         }
       ],
       "@config-plugins/react-native-blob-util",
-      "@config-plugins/react-native-pdf"
+      "@config-plugins/react-native-pdf",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
@@ -55,6 +58,7 @@
       "eas": {
         "projectId": "035efa62-7a9a-42a2-bf65-aee321fba071"
       }
-    }
+    },
+    "splash": {}
   }
 }

@@ -3,16 +3,35 @@ import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from "react
 import { videoDetails } from "../../assets/details";
 import { useRouter } from "expo-router";
 import DropDownPicker from "react-native-dropdown-picker";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getUsers,createUser,deleteUser,checkSchema } from "../database/database";
+import { useSQLiteContext } from "expo-sqlite";
 import * as Application from 'expo-application';
 import { Platform } from 'expo-modules-core';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUser } from "../userContext";
+
 
 const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');
 const translate_img = require('@/assets/images/translate.png');
 const pdf_img = require('@/assets/images/pdf.png');
+
+
+
+interface VideoItem {
+  id: string;
+  english_title: string;
+  punjabi_title: string;
+  thumbnail_en: any;
+  thumbnail_punjabi: any;
+  level: string;
+}
+
+interface VideoLanguages {
+  [key: string]: string;
+}
 
 const getDeviceId = async () => {
   if (Platform.OS === 'android') {
@@ -33,23 +52,10 @@ const getDeviceId = async () => {
   }
 }
 
-console.log(getDeviceId());
-
-interface VideoItem {
-  id: string;
-  english_title: string;
-  punjabi_title: string;
-  thumbnail_en: any;
-  thumbnail_punjabi: any;
-  level: string;
-}
-
-interface VideoLanguages {
-  [key: string]: string;
-}
-
 const VideoList = () => {
   const router = useRouter();
+  const db = useSQLiteContext();
+  const {role,setRole} = useUser();
   const [open, setOpen] = useState(false);
   const [language, setLanguage] = useState("en");
   const [items] = useState([
@@ -71,6 +77,27 @@ const VideoList = () => {
     };
     loadLanguages();
   }, []);
+
+
+  useEffect(() => {
+    const initializeUser = async () => {
+      try {
+        const deviceId = await getDeviceId(); // Fetch device ID properly
+        if (!deviceId) return;  
+        const users = await getUsers(db);
+        if (users.length === 0) {
+          await createUser(db, deviceId, role,2005); // need to check the pin
+        }
+      } catch (error) {
+        console.error("Error initializing user:", error);
+      }
+    };
+  
+    initializeUser();
+
+  }, []);
+  
+  
 
   const [levelOpen, setLevelOpen] = useState(false);
   const [level, setLevel] = useState("all");
@@ -112,9 +139,9 @@ const VideoList = () => {
 
   return (
     <View className="bg-purple-700 h-full flex-1">
-      <View className="flex flex-row p-4 items-center mt-12 justify-evenly gap-3">
+      <View className="flex flex-row p-4 items-center mt-10 justify-evenly gap-3">
         <TouchableOpacity className="" onPress={() => router.push(`/login`)}>
-          <Image source={gov_logo} className="w-[50px] h-[60px] flex-1"
+          <Image source={gov_logo} className="w-[50px] h-[60px]"
             style={{ resizeMode: "contain" }} />
         </TouchableOpacity>
         <DropDownPicker
@@ -126,7 +153,7 @@ const VideoList = () => {
             if (levelOpen) setLevelOpen(false);
           }}
           setValue={handleLanguageChange}
-          containerStyle={{ maxWidth: 95, paddingVertical: 0, flex: 2, paddingHorizontal: 0 }}
+          containerStyle={{ maxWidth: 95, paddingVertical: 0, paddingHorizontal: 0 }}
           textStyle={{ fontSize: 12 }}
           arrowIconStyle={{ marginHorizontal: -5 }}
         />
@@ -139,12 +166,13 @@ const VideoList = () => {
             if (open) setOpen(false);
           }}
           setValue={setLevel}
-          containerStyle={{ maxWidth: 100, paddingVertical: 0, flex: 2, paddingHorizontal: 0 }}
+          containerStyle={{ maxWidth: 100, paddingVertical: 0,paddingHorizontal: 0 }}
           textStyle={{ fontSize: 12 }}
           arrowIconStyle={{ marginHorizontal: -5 }}
+          //decrease the height...............
         />
 
-        <Image source={billion_readers} className="w-[50px] h-[50px] flex-1"
+        <Image source={billion_readers} className="w-[50px] h-[50px]"
           style={{ resizeMode: "contain" }} />
       </View>
 
