@@ -136,6 +136,40 @@ const AnalyticsDashboard = () => {
           <Text className="text-white text-center font-bold">EXPORT</Text>
         </TouchableOpacity>
 
+
+        <View>
+        <DropDownPicker
+              open={open}
+              value={sortoption}
+              items={items}
+              setOpen={setOpen}
+              setValue={(callback) => {
+                const newValue = callback(sortoption);
+                setSortOption(newValue);
+              }}
+              containerStyle={{ maxWidth: 125, alignSelf: "center", marginBottom: 0, paddingHorizontal: 0, padding: 0, paddingTop: 0 }}
+              textStyle={{ fontSize: 12 }}
+              arrowIconStyle={{ marginHorizontal: -5 }}
+              modalAnimationType='slide'
+              placeholder={"Select"}
+              style={{
+                borderWidth: 1,
+                borderColor: '#d5d5d9',
+                backgroundColor: '#ECE6F0',
+                borderRadius: 0,
+                paddingHorizontal: 5,
+                minHeight: 35,
+              }}
+              dropDownContainerStyle={{
+                backgroundColor: '#ECE6F0',
+                borderWidth: 1,
+                borderColor: '#d5d5d9',
+                borderRadius: 0,
+                gap: 10
+              }}
+            />
+        </View>
+
         <View
         style={{
           borderColor: '#d5d5d9',
@@ -205,7 +239,6 @@ const AnalyticsDashboard = () => {
           renderItem={({ item }) => (
             <View className="flex-row justify-between border-b border-white py-2">
 
-
               <View className="flex flex-row items-center justify-between border-b-[1px] border-gray-300 h-fit min-h-[130px]">
 
                 <Image
@@ -221,16 +254,19 @@ const AnalyticsDashboard = () => {
                     {item.language === "en" ? item.english_title : item.punjabi_title}
                   </Text>
                   <View className='flex gap-0'>
-                    <Text className="text-base font-bold text-purple-700">
+                    <Text className="text-sm font-bold text-purple-700">
                       Watch Time: {item.total_time_day} s
                     </Text>
 
-                    <Text className="text-base font-bold text-purple-700">
+                    <Text className="text-sm font-bold text-purple-700">
                       Total Views: {item.total_views_day}
                     </Text>
 
-                    <Text className="text-base font-bold text-purple-700">
+                    <Text className="text-sm font-bold text-purple-700">
                       Watched in: {item.language === "en" ? "English" : "Punjabi"}
+                    </Text>
+                    <Text className="text-sm font-bold text-purple-700">
+                      Last Watched: {item.date}
                     </Text>
                   </View>
                 </View>
