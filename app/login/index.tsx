@@ -9,7 +9,7 @@ import { Alert } from 'react-native';
 const index = () => {
   const id = "1234";
   const pass ="1234";
-  const gov_logo = require('@/assets/images/gov_logo.png');
+  const gov_logo = require('@/assets/images/billion_readers.png');
   const [adminId, setAdminId] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
@@ -24,7 +24,7 @@ const index = () => {
 
   return (
     <SafeAreaView style={{ flex: 1 }} className='bg-purple-700'>
-      <View className='flex-1 items-center h-full justify-center gap-16'>
+      <View className='flex-1 items-center h-full justify-center gap-8'>
         <Image source={gov_logo} className="w-[150px] h-[120px]"
           style={{ resizeMode: "contain" }} />
         <View className='w-[80%]'>
