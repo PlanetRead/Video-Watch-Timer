@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, AppStateStatus } from "react-native";
 import { videoDetails } from "../../assets/details";
 import { useRouter } from "expo-router";
 import DropDownPicker from "react-native-dropdown-picker";
@@ -11,7 +11,7 @@ import { Platform } from 'expo-modules-core';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { useUser } from "../userContext";
-
+import { AppState } from "react-native";
 
 const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');
@@ -76,6 +76,21 @@ const VideoList = () => {
       }
     };
     loadLanguages();
+  }, []);
+
+
+  // Reset languages when app goes into the background
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (nextAppState === "background") {
+        const resetLanguages = Object.fromEntries(videoDetails.map((item) => [item.id, "en"]));
+        setVideoLanguages(resetLanguages);
+        await AsyncStorage.setItem("videoLanguages", JSON.stringify(resetLanguages));
+      }
+    };
+
+    const subscription = AppState.addEventListener("change", handleAppStateChange);
+    return () => subscription.remove();
   }, []);
 
 
@@ -174,8 +189,8 @@ const VideoList = () => {
         />
         <TouchableOpacity className="w-[100px] h-[70px] flex-1" onPress={() => router.push(`/login`)}>
           <Image source={billion_readers} className="w-full h-full"
-            style={{ resizeMode: "contain" }} 
-            />
+            style={{ resizeMode: "contain" }}
+          />
         </TouchableOpacity>
       </View>
 
