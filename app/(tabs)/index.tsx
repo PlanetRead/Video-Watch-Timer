@@ -4,7 +4,7 @@ import { videoDetails } from "../../assets/details";
 import { useRouter } from "expo-router";
 import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getUsers,createUser,deleteUser,checkSchema } from "../database/database";
+import { getUsers, createUser, deleteUser, checkSchema } from "../database/database";
 import { useSQLiteContext } from "expo-sqlite";
 import * as Application from 'expo-application';
 import { Platform } from 'expo-modules-core';
@@ -55,7 +55,7 @@ const getDeviceId = async () => {
 const VideoList = () => {
   const router = useRouter();
   const db = useSQLiteContext();
-  const {role,setRole} = useUser();
+  const { role, setRole } = useUser();
   const [open, setOpen] = useState(false);
   const [language, setLanguage] = useState("en");
   const [items] = useState([
@@ -83,22 +83,22 @@ const VideoList = () => {
     const initializeUser = async () => {
       try {
         const deviceId = await getDeviceId(); // Fetch device ID properly
-        if (!deviceId) return;  
+        if (!deviceId) return;
         const users = await getUsers(db);
         if (users.length === 0) {
-          await createUser(db, deviceId, role,2005); // need to check the pin
+          await createUser(db, deviceId, role, 2005); // need to check the pin
           // console.log(deviceId);
         }
       } catch (error) {
         console.error("Error initializing user:", error);
       }
     };
-  
+
     initializeUser();
 
   }, []);
-  
-  
+
+
 
   const [levelOpen, setLevelOpen] = useState(false);
   const [level, setLevel] = useState("all");
@@ -140,11 +140,10 @@ const VideoList = () => {
 
   return (
     <View className="bg-purple-700 h-full flex-1">
-      <View className="flex flex-row p-4 items-center mt-10 justify-evenly gap-3">
-        <TouchableOpacity className="" onPress={() => router.push(`/login`)}>
-          <Image source={gov_logo} className="w-[50px] h-[60px]"
-            style={{ resizeMode: "contain" }} />
-        </TouchableOpacity>
+
+      <View className="flex flex-row justify-between px-4 py-6 items-center mt-10 gap-3">
+        <Image source={gov_logo} className="w-[100px] h-[70px] flex-1"
+          style={{ resizeMode: "contain" }} />
         <DropDownPicker
           open={open}
           value={language}
@@ -154,8 +153,9 @@ const VideoList = () => {
             if (levelOpen) setLevelOpen(false);
           }}
           setValue={handleLanguageChange}
-          containerStyle={{ maxWidth: 95, paddingVertical: 0, paddingHorizontal: 0 }}
-          textStyle={{ fontSize: 12 }}
+          containerStyle={{ maxWidth: 100, paddingVertical: 0, paddingHorizontal: 0, flex: 1.6 }}
+          style={{ height: 40, minHeight: 30 }}
+          textStyle={{ fontSize: 11 }}
           arrowIconStyle={{ marginHorizontal: -5 }}
         />
         <DropDownPicker
@@ -167,15 +167,18 @@ const VideoList = () => {
             if (open) setOpen(false);
           }}
           setValue={setLevel}
-          containerStyle={{ maxWidth: 100, paddingVertical: 0,paddingHorizontal: 0 }}
-          textStyle={{ fontSize: 12 }}
+          containerStyle={{ maxWidth: 100, paddingVertical: 0, flex: 2, paddingHorizontal: 0 }}
+          style={{ height: 40, minHeight: 30 }}
+          textStyle={{ fontSize: 11 }}
           arrowIconStyle={{ marginHorizontal: -5 }}
-          //decrease the height...............
         />
-
-        <Image source={billion_readers} className="w-[50px] h-[50px]"
-          style={{ resizeMode: "contain" }} />
+        <TouchableOpacity className="w-[100px] h-[70px] flex-1" onPress={() => router.push(`/login`)}>
+          <Image source={billion_readers} className="w-full h-full"
+            style={{ resizeMode: "contain" }} 
+            />
+        </TouchableOpacity>
       </View>
+
 
       <View>
         <FlatList
