@@ -221,12 +221,12 @@ const VideoList = () => {
                 <View className="flex gap-2 flex-row">
                   <TouchableOpacity
                     onPress={() => toggleVideoLanguage(item.id)}
-                    className="bg-white p-2 rounded-full">
+                    className="bg-white p-2.5 rounded-full">
                     <Image className="w-6 h-6" source={translate_img} style={{ tintColor: 'black' }} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => router.push(`/pdf/${item.id}?language=${videoLanguages[item.id]}`)}
-                    className="bg-white p-2 rounded-full">
+                    className="bg-white p-2.5 rounded-full">
                     <Image className="w-6 h-6" source={pdf_img} style={{ tintColor: 'black' }} />
                   </TouchableOpacity>
                 </View>

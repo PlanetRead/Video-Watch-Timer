@@ -7,9 +7,6 @@
     "icon": "./assets/images/bird-logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "assetBundlePatterns": [
-      "**/*"
-    ],
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -32,6 +29,15 @@
     "plugins": [
       "expo-router",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/bird-logo.png",
+          "imageWidth": 400,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      [
         "expo-video",
         {
           "supportsBackgroundPlayback": true,
@@ -45,8 +51,7 @@
         }
       ],
       "@config-plugins/react-native-blob-util",
-      "@config-plugins/react-native-pdf",
-      "expo-sqlite"
+      "@config-plugins/react-native-pdf"
     ],
     "experiments": {
       "typedRoutes": true
@@ -58,7 +63,6 @@
       "eas": {
         "projectId": "035efa62-7a9a-42a2-bf65-aee321fba071"
       }
-    },
-    "splash": {}
+    }
   }
 }

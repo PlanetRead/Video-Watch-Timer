@@ -54,35 +54,37 @@ const AnalyticsDashboard = () => {
   const [totalViews, setTotalViews] = useState(0);
 
   useEffect(() => {
-    if (!userId) return;
-
+    let isMounted = true; // Track mounted state
+  
     const fetchDetails = async () => {
+      if (!userId) return;
       try {
         const data: AnalyticsData[] = await getVideoAnalyticsByUser(db, userId);
-
-        // Calculate total time across all videos
-        const total = data.reduce((sum, item) => sum + (item.total_time_day || 0), 0);
-        setTotalTime(total);
-
-        // Calculate total views across all videos
-        const views = data.reduce((sum, item) => sum + (item.total_views_day || 0), 0);
-        setTotalViews(views);
-
-        // Merge analytics data with video details
-        const mergedData = data.map((item) => {
-          const videoDetail = videoDetails.find((video) => video.id == item.video_id.toString()) || {};
-          return { ...item, ...videoDetail };
-        });
-
-        setAnalyticsData(mergedData);
+  
+        if (isMounted) {
+          setTotalTime(data.reduce((sum, item) => sum + (item.total_time_day || 0), 0));
+          setTotalViews(data.reduce((sum, item) => sum + (item.total_views_day || 0), 0));
+  
+          const mergedData = data.map((item) => {
+            const videoDetail = videoDetails.find((video) => video.id == item.video_id.toString()) || {};
+            return { ...item, ...videoDetail };
+          });
+  
+          setAnalyticsData(mergedData);
+        }
       } catch (error) {
         console.error('Error fetching analytics:', error);
+
       }
     };
-
+  
     fetchDetails();
-
+  
+    return () => {
+      isMounted = false; // Prevent state updates on unmounted component
+    };
   }, [db, userId]);
+  
 
 
   const { height } = Dimensions.get("window");
@@ -96,6 +98,7 @@ const AnalyticsDashboard = () => {
     { label: "Level 1", value: "1" },
     { label: "Level 2", value: "2" },
     { label: "Level 3", value: "3" },
+    { label: "Level 4", value:"4"  },
   ]);
 
   // Sort Dropdown State
@@ -110,10 +113,10 @@ const AnalyticsDashboard = () => {
 
 
   useEffect(() => {
-    if (!sortoption) return; // If no sorting is selected
-
-    let sortedData = [...analyticsData];
-
+    if (!sortoption) return;
+  
+    let sortedData = [...filteredData];
+  
     switch (sortoption) {
       case "max_views":
         sortedData.sort((a, b) => b.total_views_day - a.total_views_day);
@@ -130,9 +133,20 @@ const AnalyticsDashboard = () => {
       default:
         break;
     }
+  
+    setFilteredData(sortedData);
+  }, [sortoption]);
 
-    setAnalyticsData(sortedData);
-  }, [sortoption, analyticsData]);
+
+  useEffect(() => {
+    console.log("AnalyticsDashboard Mounted");
+  
+    return () => {
+      console.log("AnalyticsDashboard Unmounted");
+    };
+  }, []);
+  
+  
 
   const [filteredData, setFilteredData] = useState<AnalyticsData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -307,7 +321,7 @@ const AnalyticsDashboard = () => {
 
         <FlatList
           data={filteredData}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(_, index) => index.toString()}
           renderItem={({ item }) => (
             <View className="flex-row justify-between border-b border-white py-2">
 

@@ -130,3 +130,6 @@ assets/videos
 assets/videos.zip
 
 .env
+
+android/
+ios/

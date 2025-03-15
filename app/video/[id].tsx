@@ -30,7 +30,7 @@ export default function VideoScreen() {
   const player = useVideoPlayer(
     language === "pa" ? video.url_punjabi : video.url_en,
     async (player) => {
-      player.loop = true;
+      player.loop = false;
 
       // Store the original orientation before changing
       const currentOrientation = await ScreenOrientation.getOrientationAsync();
