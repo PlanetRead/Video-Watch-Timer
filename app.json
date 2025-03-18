@@ -28,15 +28,12 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/bird-logo.png",
-          "imageWidth": 400,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ],
+      // [
+      //   "expo-splash-screen",{
+      //     "backgroundColor": "#FFFFFF",
+      //     "resizeMode": "contain"
+      //   }
+      // ],
       [
         "expo-video",
         {
