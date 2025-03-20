@@ -12,12 +12,17 @@ import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { useUser } from "../userContext";
 import { AppState } from "react-native";
+import { downloadVideo } from "../video/videoDownlaoder";
 
 const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');
 const translate_img = require('@/assets/images/translate.png');
 const pdf_img = require('@/assets/images/pdf.png');
-
+const VIDEO_LIST = [
+  { id: 'video_1', url: 'https://example.com/video1.mp4' },
+  { id: 'video_2', url: 'https://example.com/video2.mp4' },
+  { id: 'video_3', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'}
+];
 
 
 interface VideoItem {
@@ -111,6 +116,15 @@ const VideoList = () => {
 
     initializeUser();
 
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      // Download all videos
+      for (const video of VIDEO_LIST) {
+        await downloadVideo(video.id, video.url);
+      }
+    })();
   }, []);
 
 

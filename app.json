@@ -28,12 +28,17 @@
     },
     "plugins": [
       "expo-router",
-      // [
-      //   "expo-splash-screen",{
-      //     "backgroundColor": "#FFFFFF",
-      //     "resizeMode": "contain"
-      //   }
-      // ],
+      [
+        "expo-splash-screen",{
+          "backgroundColor": "#FFFFFF",
+          "resizeMode": "contain",
+          "image": "./assets/images/bird-logo.png",
+          "android": {
+            "resizeMode": "cover",
+            "backgroundColor": "#FFFFFF"
+          }
+        }
+      ],
       [
         "expo-video",
         {

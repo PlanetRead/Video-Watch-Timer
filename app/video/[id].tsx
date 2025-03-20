@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useKeepAwake } from 'expo-keep-awake';
 import { useSQLiteContext } from "expo-sqlite";
 import { getVideoAnalyticsByUser,getUsers } from "../database/database";
+import { getVideoUri } from "./videoDownlaoder";
 
 
 export default function VideoScreen() {
@@ -18,30 +19,68 @@ export default function VideoScreen() {
   const back = require('@/assets/images/back.png');
   const video = videoDetails.find((v) => v.id === id);
   const db = useSQLiteContext();
+  const [fileUri, setFileUri] = useState<string | null>(null);
+  
+  // Add this new state
+  const [videoSource, setVideoSource] = useState<string | null>(null);
+  
+  // useEffect(() => {
+  //   const fetchVideoUri = async () => {
+  //     const uri = await getVideoUri("video_3");
+  //     console.log("fileUri: ", uri);
+  //     setFileUri(uri);
+      
+  //     // Add this condition
+  //     if (uri && video) {
+  //       setVideoSource(uri);
+  //     }
+  //   };
 
-  if (!video) {
-    return (
-      <View>
-        <Text style={styles.errorText}>Video not found</Text>
-      </View>
-    );
-  }
+  //   fetchVideoUri();
+  // }, []);
 
+  useEffect(() => {
+    if (video) {
+      setVideoSource(language === "pa" ? video.url_punjabi : video.url_en);
+    }
+  }, [video, language]);
+  
+
+  // Move player up here and modify
   const player = useVideoPlayer(
-    language === "pa" ? video.url_punjabi : video.url_en,
+    videoSource || '',
     async (player) => {
+      if (!videoSource) return; // Add this check
+      
       player.loop = false;
-
-      // Store the original orientation before changing
       const currentOrientation = await ScreenOrientation.getOrientationAsync();
       setOriginalOrientation(currentOrientation);
-
-      // Change to landscape mode automatically
       await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-
       await player.play();
     }
   );
+
+  // Remove the conditional return here
+  // if (!video || !fileUri) {
+  //   return (
+  //     <View>
+  //  
+
+  // const player = useVideoPlayer(
+  //   language === "pa" ? fileUri : fileUri,
+  //   async (player) => {
+  //     player.loop = false;
+
+  //     // Store the original orientation before changing
+  //     const currentOrientation = await ScreenOrientation.getOrientationAsync();
+  //     setOriginalOrientation(currentOrientation);
+
+  //     // Change to landscape mode automatically
+  //     await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+
+  //     await player.play();
+  //   }
+  // );
 
   // Restore original orientation when exiting
   useEffect(() => {
@@ -52,22 +91,22 @@ export default function VideoScreen() {
     };
   }, [originalOrientation]);
 
-  useEffect(() => {
-    // Video Title
-    // console.log(`Video Title: ${video.english_title}`);
+  // useEffect(() => {
+  //   // Video Title
+  //   // console.log(`Video Title: ${video.english_title}`);
 
-    // // Update the view count
-    // console.log("View Count ++");
+  //   // // Update the view count
+  //   // console.log("View Count ++");
 
-    // // Update the view count based on the language
-    // if (language === 'pa') {
-    //   console.log("Punjabi View Count ++");
-    // }
-    // else {
-    //   console.log("English View Count ++");
-    // }
+  //   // // Update the view count based on the language
+  //   // if (language === 'pa') {
+  //   //   console.log("Punjabi View Count ++");
+  //   // }
+  //   // else {
+  //   //   console.log("English View Count ++");
+  //   // }
 
-  }, []);
+  // }, []);
 
   const updateVideoAnalytics = async (watchedTime: number) => {
     try {
