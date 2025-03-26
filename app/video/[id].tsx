@@ -23,10 +23,11 @@ export default function VideoScreen() {
   
   // Add this new state
   const [videoSource, setVideoSource] = useState<string | null>(null);
-  
+  // video_id_language -> video_3_en
+  // const videoUri = `${video.id}_${language === "pa" ? "pa" : "en"}`;
   // useEffect(() => {
   //   const fetchVideoUri = async () => {
-  //     const uri = await getVideoUri("video_3");
+  //     const uri = await getVideoUri(videoUri);
   //     console.log("fileUri: ", uri);
   //     setFileUri(uri);
       

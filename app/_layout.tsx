@@ -57,7 +57,7 @@ export default function RootLayout() {
   }));
 
   // Show custom splash screen while loading
-  if (!appIsReady || isLoading) {
+  if (!appIsReady || !isLoading) {
     return (
       <View 
         style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#6B21A8" }}

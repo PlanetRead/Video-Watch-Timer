@@ -17,6 +17,10 @@ import { Ionicons } from "@expo/vector-icons";
 import PieChart from "react-native-pie-chart";
 import { StyleSheet } from "react-native";
 import SyncToCloud from "@/components/SyncToCloud";
+import * as FileSystem from 'expo-file-system';
+import Papa from 'papaparse';
+import * as Sharing from 'expo-sharing';
+
 
 // Define type for analytics data
 type AnalyticsData = {
@@ -189,6 +193,32 @@ const AnalyticsDashboard = () => {
     { value: 123, color: "#ed8cff" },
   ];
 
+  const exportData = async () => {
+   try {
+    alert("Exporting data to CSV");
+
+    // Convert JSON data to CSV
+    const csvContent = Papa.unparse(analyticsData);
+
+    // Define file path
+    const fileUri = `${FileSystem.documentDirectory}analytics.csv`;
+
+    // Write the CSV file
+    await FileSystem.writeAsStringAsync(fileUri, csvContent, { encoding: FileSystem.EncodingType.UTF8 });
+
+    console.log('CSV file saved successfully:', fileUri);
+
+    // Share the file
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(fileUri);
+    } else {
+      alert("Sharing is not available on this device.");
+    }
+  } catch (error) {
+    console.error("Error exporting CSV:", error);
+  }
+  }
+
   return (
     <SafeAreaView
       style={{ flex: 1, minHeight: height, maxHeight: "auto" }}
@@ -229,7 +259,7 @@ const AnalyticsDashboard = () => {
           </View>
         </View>
 
-        <TouchableOpacity className="bg-purple-700 my-2 p-3 mt-4 w-full">
+        <TouchableOpacity className="bg-purple-700 my-2 p-3 mt-4 w-full" onPress={exportData}>
           <Text className="text-white text-center font-bold">EXPORT</Text>
         </TouchableOpacity>
 
