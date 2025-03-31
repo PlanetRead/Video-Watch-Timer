@@ -20,7 +20,8 @@ import SyncToCloud from "@/components/SyncToCloud";
 import * as FileSystem from 'expo-file-system';
 import Papa from 'papaparse';
 import * as Sharing from 'expo-sharing';
-
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 // Define type for analytics data
 type AnalyticsData = {
@@ -44,6 +45,12 @@ const AnalyticsDashboard = () => {
   const db = useSQLiteContext();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+
+   // Date range state
+   const [startDate, setStartDate] = useState<Date | null>(null);
+   const [endDate, setEndDate] = useState<Date | null>(null);
+   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -160,6 +167,25 @@ const AnalyticsDashboard = () => {
   const [filteredData, setFilteredData] = useState<AnalyticsData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
+   // Handle date changes
+   const onStartDateChange = (event:DateTimePickerEvent, selectedDate?:Date) => {
+    const currentDate = selectedDate || startDate;
+    setShowStartDatePicker(false);
+    setStartDate(currentDate);
+  };
+
+  const onEndDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    const currentDate = selectedDate || endDate;
+    setShowEndDatePicker(false);
+    setEndDate(currentDate);
+  };
+
+  // Reset date filters
+  const resetDateFilters = () => {
+    setStartDate(null);
+    setEndDate(null);
+  };
+
   useEffect(() => {
     let result = [...analyticsData];
 
@@ -181,8 +207,37 @@ const AnalyticsDashboard = () => {
       );
     }
 
+    // Date Range Filter
+    if (startDate || endDate) {
+      result = result.filter((item) => {
+        const itemDate = new Date(item.date);
+        
+        // Check if date is valid
+        if (isNaN(itemDate.getTime())) {
+          return false;
+        }
+        
+        // Filter by start date if set
+        if (startDate && itemDate < startDate) {
+          return false;
+        }
+        
+        // Filter by end date if set
+        if (endDate) {
+          // Set end date to end of day
+          const endOfDay = new Date(endDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (itemDate > endOfDay) {
+            return false;
+          }
+        }
+        
+        return true;
+      });
+    }
+
     setFilteredData(result);
-  }, [searchQuery, analyticsData, selectedLevel]);
+  }, [searchQuery, analyticsData, selectedLevel, startDate, endDate]);
 
   const widthAndHeight = 150;
 
@@ -218,6 +273,12 @@ const AnalyticsDashboard = () => {
     console.error("Error exporting CSV:", error);
   }
   }
+
+   // Format date for display
+   const formatDate = (date:Date) => {
+    if (!date) return "Select";
+    return date.toLocaleDateString("en-CA")
+  };
 
   return (
     <SafeAreaView
@@ -271,7 +332,7 @@ const AnalyticsDashboard = () => {
 
 
         {/* Level and Date Dropdowns */}
-        <View className="flex-row justify-between mb-4">
+        <View className="flex-row justify-between mb-2">
           <View
             className="flex flex-row gap-2 p-2"
             style={{
@@ -310,6 +371,81 @@ const AnalyticsDashboard = () => {
             }}
           />
         </View>
+
+         {/* Date Range Filter Section */}
+         <View className="flex-row mb-2 w-full gap-2">
+            {/* Start Date Picker */}
+            <TouchableOpacity 
+              onPress={() => setShowStartDatePicker(true)}
+              style={{
+                borderWidth: 1,
+                borderColor: "#d5d5d9",
+                backgroundColor: "#ECE6F0",
+                padding: 8,
+                flexDirection: 'row',
+                alignItems: 'center',
+                flex: 1,
+              }}
+            >
+              <Ionicons name="calendar-outline" size={16} color="gray" style={{marginRight: 4}} />
+              <Text>{startDate ? formatDate(startDate) : "Start Date"}</Text>
+            </TouchableOpacity>
+            
+            {/* End Date Picker */}
+            <TouchableOpacity 
+              onPress={() => setShowEndDatePicker(true)}
+              style={{
+                borderWidth: 1,
+                borderColor: "#d5d5d9",
+                backgroundColor: "#ECE6F0",
+                padding: 8,
+                flexDirection: 'row',
+                alignItems: 'center',
+                flex: 1,
+              }}
+            >
+              <Ionicons name="calendar-outline" size={16} color="gray" style={{marginRight: 4}} />
+              <Text>{endDate ? formatDate(endDate) : "End Date"}</Text>
+            </TouchableOpacity>
+            
+            {/* Reset Button */}
+            {(startDate || endDate) && (
+              <TouchableOpacity 
+                onPress={resetDateFilters}
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#d5d5d9",
+                  backgroundColor: "#7e22ce",
+                  padding: 8,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="close" size={16} color="white" />
+              </TouchableOpacity>
+            )}
+          </View>
+        
+        
+        {/* Date Pickers (hidden by default) */}
+        {showStartDatePicker && (
+          <DateTimePicker
+            value={startDate || new Date()}
+            mode="date"
+            display="default"
+            onChange={onStartDateChange}
+          />
+        )}
+        
+        {showEndDatePicker && (
+          <DateTimePicker
+            value={endDate || new Date()}
+            mode="date"
+            display="default"
+            onChange={onEndDateChange}
+            minimumDate={startDate || undefined}
+          />
+        )}
 
         <View
           style={{
