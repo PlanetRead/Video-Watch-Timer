@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { StyleSheet, View, Text, TouchableOpacity, Image } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, Image,TouchableWithoutFeedback } from "react-native";
 import { videoDetails } from "@/assets/details";
 import { useEffect, useState } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -9,7 +9,10 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { useSQLiteContext } from "expo-sqlite";
 import { getVideoAnalyticsByUser,getUsers } from "../database/database";
 import { getVideoUri } from "./videoDownlaoder";
+import { BackHandler } from "react-native"; // for handling back button press on android
 
+
+//Here back issue is solved but controls by default they are showing......
 
 export default function VideoScreen() {
   useKeepAwake();
@@ -20,33 +23,43 @@ export default function VideoScreen() {
   const video = videoDetails.find((v) => v.id === id);
   const db = useSQLiteContext();
   const [fileUri, setFileUri] = useState<string | null>(null);
+  const [showControls, setShowControls] = useState(false);
   
   // Add this new state
   const [videoSource, setVideoSource] = useState<string | null>(null);
   // video_id_language -> video_3_en
-  // const videoUri = `${video.id}_${language === "pa" ? "pa" : "en"}`;
-  // useEffect(() => {
-  //   const fetchVideoUri = async () => {
-  //     const uri = await getVideoUri(videoUri);
-  //     console.log("fileUri: ", uri);
-  //     setFileUri(uri);
-      
-  //     // Add this condition
-  //     if (uri && video) {
-  //       setVideoSource(uri);
-  //     }
-  //   };
-
-  //   fetchVideoUri();
-  // }, []);
+  const videoUri = `${video?.id}_${language == "pa" ? "pa" : "en"}`;
+  // const videoUri = "video_1";
 
   useEffect(() => {
-    if (video) {
-      setVideoSource(language === "pa" ? video.url_punjabi : video.url_en);
-    }
-  }, [video, language]);
-  
+    const fetchVideoUri = async () => {
+      const uri = await getVideoUri(videoUri);
+      console.log("fileUri: ", uri);
+      setFileUri(uri);
+      
+      // Add this condition
+      if (uri && video) {
+        setVideoSource(uri);
+      }
+    };
 
+    fetchVideoUri();
+  }, []);
+  const handlePress = () => {
+    setShowControls(true);
+    setTimeout(() => setShowControls(false), 3000); // Hide controls after 3 seconds
+  };
+
+  // useEffect(() => {
+  //   if (video) {
+  //     setVideoSource(language === "pa" ? video.url_punjabi : video.url_en);
+  //   }
+  // }, [video, language]);
+
+  
+  
+  
+  
   // Move player up here and modify
   const player = useVideoPlayer(
     videoSource || '',
@@ -60,10 +73,22 @@ export default function VideoScreen() {
       await player.play();
     }
   );
+  
+  useEffect(() => {
+    const backAction = () => {
+      returnBackToHome(); // Call your function to track analytics & navigate
+      return true; // Prevent default back behavior
+    };
+  
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+  
+    return () => backHandler.remove(); // Cleanup when unmounting
+  }, [player, originalOrientation, router]); // Add dependencies
 
+  
   // Remove the conditional return here
   // if (!video || !fileUri) {
-  //   return (
+    //   return (
   //     <View>
   //  
 
@@ -92,22 +117,6 @@ export default function VideoScreen() {
     };
   }, [originalOrientation]);
 
-  // useEffect(() => {
-  //   // Video Title
-  //   // console.log(`Video Title: ${video.english_title}`);
-
-  //   // // Update the view count
-  //   // console.log("View Count ++");
-
-  //   // // Update the view count based on the language
-  //   // if (language === 'pa') {
-  //   //   console.log("Punjabi View Count ++");
-  //   // }
-  //   // else {
-  //   //   console.log("English View Count ++");
-  //   // }
-
-  // }, []);
 
   const updateVideoAnalytics = async (watchedTime: number) => {
     try {
@@ -169,6 +178,8 @@ export default function VideoScreen() {
   };
   
   return (
+  <TouchableWithoutFeedback onPress={handlePress}>
+
     <View style={styles.fullscreenContainer}>
 
       <TouchableOpacity
@@ -179,11 +190,14 @@ export default function VideoScreen() {
       </TouchableOpacity>
 
       <VideoView
+        key={showControls ? "controls-on" : "controls-off"}
         style={styles.video}
         player={player}
+        // nativeControls={showControls}
         contentFit="cover"
       />
     </View>
+  </TouchableWithoutFeedback>
   );
 }
 

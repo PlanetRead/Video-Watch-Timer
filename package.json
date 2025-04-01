@@ -59,6 +59,7 @@
     "react-native-blob-util": "^0.21.2",
     "react-native-dropdown-picker": "^5.4.6",
     "react-native-gesture-handler": "~2.20.2",
+    "react-native-paper": "^5.13.1",
     "react-native-pdf": "^6.7.7",
     "react-native-pie-chart": "^4.0.1",
     "react-native-reanimated": "3.16.2",
