@@ -178,8 +178,6 @@ export default function VideoScreen() {
   };
   
   return (
-  <TouchableWithoutFeedback onPress={handlePress}>
-
     <View style={styles.fullscreenContainer}>
 
       <TouchableOpacity
@@ -190,14 +188,11 @@ export default function VideoScreen() {
       </TouchableOpacity>
 
       <VideoView
-        key={showControls ? "controls-on" : "controls-off"}
         style={styles.video}
         player={player}
-        // nativeControls={showControls}
         contentFit="cover"
       />
     </View>
-  </TouchableWithoutFeedback>
   );
 }
 

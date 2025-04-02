@@ -21,105 +21,30 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const VIDEO_LIST = [
-    { id: '1_en', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    { id: '1_pa', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    { id: '2_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    { id: '2_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' }
-    // { id: '3_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '3_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '4_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '4_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '5_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '5_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '6_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '6_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '7_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '7_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '8_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '8_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '9_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '9_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '10_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '10_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '11_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '11_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '12_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '12_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '13_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '13_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '14_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '14_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '15_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '15_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '16_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '16_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '17_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '17_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '18_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '18_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '19_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '19_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '20_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '20_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '21_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '21_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '22_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '22_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '23_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '23_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '24_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '24_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '25_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '25_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '26_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '26_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '27_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '27_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '28_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '28_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '29_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '29_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '30_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '30_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '31_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '31_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '32_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '32_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '33_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '33_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '34_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '34_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '35_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '35_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '36_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '36_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '37_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '37_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '38_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '38_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '39_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '39_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '40_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '40_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '41_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '41_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '42_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '42_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '43_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '43_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '44_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '44_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '45_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '45_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '46_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '46_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '47_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '47_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '48_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '48_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '49_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '49_pa', url: 'https://storage.googleapis.com/plan--1/BigBuckBunny.mp4' },
-    // { id: '50_en', url: 'https://storage.cloud.google.com/plan--1/BigBuckBunny.mp4' }
+      { id: '1_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/A_Cloud_of_Trash_English.mp4' },
+      { id: '1_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/A_Cloud_of_Trash_Punjabi.mp4' },
+      { id: '2_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/A_Street,_or_a_Zoo_English.mp4' },
+      { id: '2_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/A_Street,_or_a_Zoo_Punjabi.mp4' },
+      { id: '3_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/Aaloo_Maaloo_Kaaloo_English.mp4' },
+      { id: '3_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/Aaloo_Maaloo_Kaaloo_Punjabi.mp4' },
+      { id: '4_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/Abdul_Kalam,_A_Lesson_for_my_Teacher_English.mp4' },
+      { id: '4_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/Abdul_Kalam,_A_Lesson_for_my_Teacher_Punjabi.mp4' },
+      { id: '5_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/Abdul_Kalam,_Designing_a_Fighter_Jet_English.mp4' },
+      { id: '5_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/Abdul_Kalam,_Designing_a_Fighter_Jet_Punjabi.mp4' },
+      { id: '6_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/Abdul_Kalam,_Failure_to_Success_English.mp4' },
+      { id: '6_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/Abdul_Kalam,_Failure_to_Success_Punjabi.mp4' },
+      { id: '7_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/Ammus_Puppy_English.mp4' },
+      { id: '7_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/Ammus_Puppy_Punjabi.mp4' },
+      { id: '8_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/Bheema,_the_Sleepyhead_English.mp4' },
+      { id: '8_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/Bheema,_the_Sleepyhead_Punjabi.mp4' },
+      { id: '9_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/Bunty_and_Bubbly_English.mp4' },
+      { id: '9_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/Bunty_and_Bubbly_Punjabi.mp4' },
+      { id: '10_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/The_Moon_and_the_Cap_English.mp4' },
+      { id: '10_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/The_Moon_and_the_Cap_Punjabi.mp4' },
+      { id: '11_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/The_Princess_Farmer_English.mp4' },
+      { id: '11_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/The_Princess_Farmer_Punjabi.mp4' },
+      { id: '12_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/Too_Big_Too_Small_English.mp4' },
+      { id: '12_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/Too_Big!_Too_Small!_Punjabi.mp4' }
   ];
    
   const [isLoading, setIsLoading] = useState(true);
@@ -146,16 +71,26 @@ export default function RootLayout() {
         await Asset.loadAsync([splash_img]); // Preload the image
         scale.value = withTiming(1, { duration: 1200, easing: Easing.out(Easing.exp) });
         opacity.value = withTiming(1, { duration: 1200 });
-
-        setTimeout(async () => {
-          await SplashScreen.hideAsync(); // Hide splash screen properly
+  
+        // Set a minimum display time for the splash screen (e.g., 3000ms = 3 seconds)
+        const minimumDisplayTime = 4000;
+        const startTime = Date.now();
+        
+        await SplashScreen.hideAsync(); // Hide the system splash screen
+  
+        // Ensure our custom splash screen stays visible for the minimum time
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, minimumDisplayTime - elapsedTime);
+        
+        setTimeout(() => {
           setIsLoading(false);
-        }, 4500);
+        }, remainingTime);
       } catch (error) {
         console.warn("Error loading assets:", error);
+        setIsLoading(false); // Ensure we exit loading state even on error
       }
     }
-
+  
     preloadAssets();
   }, []);
 
@@ -163,7 +98,7 @@ export default function RootLayout() {
     useEffect(() => {
       (async () => {
         // Download all videos
-        await clearDownloadedVideos(); // only for testing purposes don't use it in production
+        // await clearDownloadedVideos(); // only for testing purposes don't use it in production
         let completed = 0;
         for (const video of VIDEO_LIST) {
           await downloadVideo(video.id, video.url);
