@@ -121,6 +121,15 @@ const AnalyticsDashboard = () => {
     { label: "Level 4", value: "4" },
   ]);
 
+    // Level Dropdown State
+    const [languageOpen, setLanguageOpen] = useState(false);
+    const [selectedLanguage, setSelectedLanguage] = useState("All Lang");
+    const [languageItems] = useState([
+      { label: "All Lang", value: "All Lang" },
+      { label: "English", value: "en" },
+      { label: "Punjabi", value: "pa" },
+    ]);
+
   // Sort Dropdown State
   const [open, setOpen] = useState(false);
   const [sortoption, setSortOption] = useState<string | null>(null);
@@ -207,6 +216,13 @@ const AnalyticsDashboard = () => {
       );
     }
 
+    // Language Filter
+    if (selectedLanguage !== "All") {
+      result = result.filter(item =>
+        item.language?.toString() === selectedLanguage.toString()
+      );      
+    }
+
     // Date Range Filter
     if (startDate || endDate) {
       result = result.filter((item) => {
@@ -237,7 +253,7 @@ const AnalyticsDashboard = () => {
     }
 
     setFilteredData(result);
-  }, [searchQuery, analyticsData, selectedLevel, startDate, endDate]);
+  }, [searchQuery, analyticsData, selectedLevel, startDate, endDate, selectedLanguage]);
 
   const widthAndHeight = 150;
 
@@ -331,7 +347,7 @@ const AnalyticsDashboard = () => {
         <SyncToCloud/>
 
 
-        {/* Level and Date Dropdowns */}
+        {/* Level, Language and Date Dropdowns */}
         <View className="flex-row justify-between mb-2">
           <View
             className="flex flex-row gap-2 p-2"
@@ -370,6 +386,32 @@ const AnalyticsDashboard = () => {
               borderRadius: 0,
             }}
           />
+
+           {/* Language Dropdown */}
+           <DropDownPicker
+            open={languageOpen}
+            value={selectedLanguage}
+            items={languageItems}
+            setOpen={setLanguageOpen}
+            setValue={(newValue) => setSelectedLanguage(newValue)}
+            containerStyle={{ maxWidth: 125 }}
+            placeholder="Select Lang"
+            style={{
+              borderWidth: 1,
+              borderColor: "#d5d5d9",
+              backgroundColor: "#ECE6F0",
+              borderRadius: 0,
+              paddingHorizontal: 5,
+              minHeight: 35,
+            }}
+            dropDownContainerStyle={{
+              backgroundColor: "#ECE6F0",
+              borderColor: "#d5d5d9",
+              zIndex: 1000,
+              borderRadius: 0,
+            }}
+          />
+
         </View>
 
          {/* Date Range Filter Section */}
