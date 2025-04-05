@@ -336,7 +336,9 @@ const AnalyticsDashboard = () => {
           </View>
         </View>
 
-        <TouchableOpacity className="bg-purple-700 my-2 p-3 mt-4 w-full" onPress={exportData}>
+        <Text className="text-purple-700 text-center font-bold bg-[#ECE6F0] p-3 my-2 mt-4">Device Id : {userId}</Text>
+
+        <TouchableOpacity className="bg-purple-700 p-3 w-full" onPress={exportData}>
           <Text className="text-white text-center font-bold">EXPORT</Text>
         </TouchableOpacity>
 
