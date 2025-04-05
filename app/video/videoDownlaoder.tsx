@@ -41,3 +41,17 @@ export const getVideoUri = async (videoId: string): Promise<string | null> => {
       return null;
     }
   };
+
+  export const clearDownloadedVideos = async () => {
+    try {
+      const dirInfo = await FileSystem.getInfoAsync(VIDEO_DIR);
+      if (dirInfo.exists) {
+        await FileSystem.deleteAsync(VIDEO_DIR, { idempotent: true });
+        console.log('All downloaded videos cleared.');
+      } else {
+        console.log('No videos to clear.');
+      }
+    } catch (error) {
+      console.error('Error clearing videos:', error);
+    }
+  };
