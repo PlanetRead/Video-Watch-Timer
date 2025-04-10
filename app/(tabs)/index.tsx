@@ -73,6 +73,10 @@ const VideoList = () => {
       if (savedLanguages) {
         setVideoLanguages(JSON.parse(savedLanguages));
       }
+      const savedLevel = await AsyncStorage.getItem('levelDropdown');
+      if (savedLevel) {
+        setLevel(savedLevel);
+      }
     };
     loadLanguages();
   }, []);
@@ -83,8 +87,12 @@ const VideoList = () => {
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       if (nextAppState === "background") {
         const resetLanguages = Object.fromEntries(videoDetails.map((item) => [item.id, "en"]));
+        const resetLevel = Object.fromEntries(videoDetails.map((item) => [item.id, "all"]));
+        // console.log("Resetting languages to default:", resetLevel);
         setVideoLanguages(resetLanguages);
+        setLevel("all");
         await AsyncStorage.setItem("videoLanguages", JSON.stringify(resetLanguages));
+        await AsyncStorage.setItem("levelDropdown", "all");
       }
     };
 
@@ -136,6 +144,13 @@ const VideoList = () => {
     setVideoLanguages(newVideoLanguages);
   };
 
+  const handleLevelChange = (callback: (prevValue: string) => string) => {
+    const newValue = callback(level);
+    setLevel(newValue);
+    AsyncStorage.setItem('levelDropdown', newValue);
+  };
+
+
   const toggleVideoLanguage = (videoId: string) => {
     setVideoLanguages((prev) => {
       const updated = { ...prev, [videoId]: prev[videoId] === "en" ? "pa" : "en" };
@@ -182,7 +197,7 @@ const VideoList = () => {
             setLevelOpen(val);
             if (open) setOpen(false);
           }}
-          setValue={setLevel}
+          setValue={handleLevelChange}
           containerStyle={{ maxWidth: 100, paddingVertical: 0, flex: 2, paddingHorizontal: 0 }}
           style={{ height: 40, minHeight: 30 }}
           textStyle={{ fontSize: 11 }}

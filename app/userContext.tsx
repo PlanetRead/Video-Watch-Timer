@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
-type UserRole = 'admin' | 'student';
+type UserRole = string;
 
 // Create the context type
 interface UserContextType {
@@ -13,7 +13,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 // Provider Component
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [role, setRole] = useState<UserRole>('student'); // Default role is 'student'
+  const [role, setRole] = useState<UserRole>('Demo student'); // Default role is 'student'
 
   return (
     <UserContext.Provider value={{ role, setRole }}>

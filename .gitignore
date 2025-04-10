@@ -133,3 +133,7 @@ assets/videos.zip
 
 android/
 ios/
+# Expo
+.expo
+dist/
+web-build/

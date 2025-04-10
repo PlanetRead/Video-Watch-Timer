@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getVideoAnalyticsByUser, getUsers } from "../database/database";
+import { getVideoAnalyticsByUser, getUsers, deleteAllUserData, createUser, editUserName } from "../database/database";
 import { useSQLiteContext } from "expo-sqlite";
 import { Dimensions } from "react-native";
 import { videoDetails } from "../../assets/details";
@@ -22,6 +22,9 @@ import Papa from 'papaparse';
 import * as Sharing from 'expo-sharing';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { Modal } from "react-native";
+import { create } from "react-test-renderer";
+
 
 // Define type for analytics data
 type AnalyticsData = {
@@ -52,12 +55,21 @@ const AnalyticsDashboard = () => {
    const [showStartDatePicker, setShowStartDatePicker] = useState(false);
    const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
+   // For editing the username
+   const [username, setUsername] = useState("Default Username"); // current username need to fetch from the db
+   const [editModalVisible, setEditModalVisible] = useState(false);
+   const [newUsername, setNewUsername] = useState("");
+   const [editSuccess, setEditSuccess] = useState(false);
+
+
+
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
         const users = await getUsers(db); // Fetch all users
         if (users.length > 0) {
-          setUserId(users[0].id); // Set the first user's ID
+          setUserId(users[0].id);
+          setUsername(users[0].user_name) // Set the first user's ID
         }
       } catch (error) {
         console.error("Error fetching user details:", error);
@@ -290,6 +302,19 @@ const AnalyticsDashboard = () => {
   }
   }
 
+  const deleteData = async () => {
+    try {
+      alert("Deleting all user data");
+      await deleteAllUserData(db);
+      alert("All user data deleted successfully");
+      setAnalyticsData([]); // Clear the local state
+      setTotalTime(0);
+      setTotalViews(0);
+    } catch (error) {
+      console.error("Error deleting user data:", error);
+    }
+  }
+
    // Format date for display
    const formatDate = (date:Date) => {
     if (!date) return "Select";
@@ -336,17 +361,37 @@ const AnalyticsDashboard = () => {
           </View>
         </View>
 
-        <Text className="text-purple-700 text-center font-bold bg-[#ECE6F0] p-3 my-2 mt-4">Device Id : {userId}</Text>
+        <TouchableOpacity
+  className="bg-purple-700 p-2 rounded mt-4"
+  onPress={() => setEditModalVisible(true)}
+>
+  <Text className="text-white text-center">Edit Username</Text>
+</TouchableOpacity>
 
-        <TouchableOpacity className="bg-purple-700 p-3 w-full" onPress={exportData}>
-          <Text className="text-white text-center font-bold">EXPORT</Text>
+
+        <TouchableOpacity 
+        className="bg-purple-700 my-2 p-3 mt-4 w-full rounded" 
+        onPress={exportData}
+      >
+        <Text className="text-white text-center font-bold">EXPORT</Text>
+      </TouchableOpacity>
+
+        <View className="flex-row justify-between my-2 space-x-2 gap-2">
+        {/* SyncToCloud component taking half width */}
+        <View className="flex-1">
+          <SyncToCloud />
+        </View>
+        
+        {/* Delete button taking half width */}
+        <View className="flex-1">
+        <TouchableOpacity 
+          className="bg-[#ECE6F0] p-3 w-full" 
+          onPress={deleteData}
+        >
+          <Text className="text-red-500 text-center font-bold">DELETE USER DATA</Text>
         </TouchableOpacity>
-
-        {/* <TouchableOpacity className="bg-[#ECE6F0] my-2 p-3 mt-2 w-full">
-          <Text className="text-purple-700 text-center font-bold">SYNC TO CLOUD</Text>
-        </TouchableOpacity> */}
-
-        <SyncToCloud/>
+        </View>
+      </View>
 
 
         {/* Level, Language and Date Dropdowns */}
@@ -610,7 +655,65 @@ const AnalyticsDashboard = () => {
             </View>
           )}
         />
+        
       </View>
+      <Modal
+  animationType="slide"
+  transparent={true}
+  visible={editModalVisible}
+  onRequestClose={() => setEditModalVisible(false)}
+>
+  <View className="flex-1 justify-center items-center bg-black/50">
+    <View className="bg-white rounded-xl w-4/5 p-4">
+      {editSuccess ? (
+        <View className="items-center justify-center p-6">
+          <Text className="text-4xl mb-2">✅</Text>
+          <Text className="text-green-700 font-semibold text-lg">Username updated!</Text>
+        </View>
+      ) : (
+        <>
+          <Text className="text-lg font-bold mb-2">Edit Username from {username} to:</Text>
+          <TextInput
+            className="border border-gray-300 rounded p-2 mb-4"
+            placeholder="Enter new username"
+            value={newUsername}
+            onChangeText={setNewUsername}
+          />
+          <View className="flex-row justify-between">
+            <TouchableOpacity
+              className="bg-gray-300 px-4 py-2 rounded"
+              onPress={() => setEditModalVisible(false)}
+            >
+              <Text>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-purple-700 px-4 py-2 rounded"
+              onPress={() => {
+                if (newUsername.trim()) {
+                  setUsername(newUsername);
+                  deleteAllUserData(db);
+                  editUserName(db, userId!, newUsername)
+                    .then(() => {
+                      setEditSuccess(true);
+                      setTimeout(() => {
+                        setEditModalVisible(false);
+                        setEditSuccess(false);
+                      }, 1500);
+                    });
+                  setNewUsername("");  
+                }
+              }}
+            >
+              <Text className="text-white">Save</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+    </View>
+  </View>
+</Modal>
+
+
     </SafeAreaView>
   );
 };

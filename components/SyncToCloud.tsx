@@ -164,7 +164,7 @@ const SyncToCloud = () => {
 
   return (
     <View>
-      <TouchableOpacity className="bg-[#ECE6F0] my-2 p-3 mt-2 w-full">
+      <TouchableOpacity className="bg-[#ECE6F0] p-3 w-full">
         <Text
           className="text-purple-700 text-center font-bold"
           onPress={fetchUserDetails}

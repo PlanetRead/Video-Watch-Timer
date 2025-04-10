@@ -139,5 +139,24 @@ export const initializeDatabase = async (db: SQLiteDatabase) => {
     }
   };
   
-  
-  
+// delete all the data regarding the user but here we will have one user only so we will delete all the data noo need of id
+export const deleteAllUserData = async (db: SQLiteDatabase) => {
+    try {
+      // await db.runAsync('DELETE FROM user');
+      await db.runAsync('DELETE FROM video_analytics');
+      console.log('All user data deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting all user data:', error);
+    }
+  }
+
+
+  //edit username with user id
+export const editUserName = async (db: SQLiteDatabase, userId: string, newUserName: string) => {
+    try {
+      await db.runAsync('UPDATE user SET user_name = ? WHERE id = ?', [newUserName, userId]);
+      console.log(`User name updated to ${newUserName} for user ID ${userId}`);
+    } catch (error) {
+      console.error('Error updating user name:', error);
+    }
+  }

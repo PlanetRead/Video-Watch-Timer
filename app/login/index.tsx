@@ -7,8 +7,11 @@ import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 
 const index = () => {
-  const id = "1234";
-  const pass ="1234";
+  const id = process.env.EXPO_PUBLIC_ADMIN_ID
+  const pass = process.env.EXPO_PUBLIC_ADMIN_PASSWORD
+
+  console.log("Admin ID: ", id);
+  console.log("Admin Password: ", pass);
   const gov_logo = require('@/assets/images/billion_readers.png');
   const [adminId, setAdminId] = useState('');
   const [password, setPassword] = useState('');
