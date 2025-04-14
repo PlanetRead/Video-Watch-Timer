@@ -665,12 +665,6 @@ const AnalyticsDashboard = () => {
 >
   <View className="flex-1 justify-center items-center bg-black/50">
     <View className="bg-white rounded-xl w-4/5 p-4">
-      {editSuccess ? (
-        <View className="items-center justify-center p-6">
-          <Text className="text-4xl mb-2">✅</Text>
-          <Text className="text-green-700 font-semibold text-lg">Username updated!</Text>
-        </View>
-      ) : (
         <>
           <Text className="text-lg font-bold mb-2">Edit Username from {username} to:</Text>
           <TextInput
@@ -691,10 +685,11 @@ const AnalyticsDashboard = () => {
               onPress={() => {
                 if (newUsername.trim()) {
                   setUsername(newUsername);
-                  deleteAllUserData(db);
+                  deleteData();
                   editUserName(db, userId!, newUsername)
                     .then(() => {
                       setEditSuccess(true);
+
                       setTimeout(() => {
                         setEditModalVisible(false);
                         setEditSuccess(false);
@@ -708,7 +703,6 @@ const AnalyticsDashboard = () => {
             </TouchableOpacity>
           </View>
         </>
-      )}
     </View>
   </View>
 </Modal>
