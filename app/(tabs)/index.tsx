@@ -188,7 +188,7 @@ const VideoList = () => {
           textStyle={{ fontSize: 11 }}
           arrowIconStyle={{ marginHorizontal: -5 }}
         />
-        <TouchableOpacity className="w-[100px] h-[70px] flex-1" onPress={() => router.push(`/login`)}>
+        <TouchableOpacity className="w-[100px] h-[70px] flex-1" onLongPress={() => router.push(`/login`)} delayLongPress={5000}>
           <Image source={billion_readers} className="w-full h-full"
             style={{ resizeMode: "contain" }}
           />
