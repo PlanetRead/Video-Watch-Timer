@@ -24,6 +24,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { Modal } from "react-native";
 import { create } from "react-test-renderer";
+import { useTheme } from "../themeContext";
 
 
 // Define type for analytics data
@@ -46,6 +47,7 @@ type AnalyticsData = {
 
 const AnalyticsDashboard = () => {
   const db = useSQLiteContext();
+  const { isDarkMode } = useTheme();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -324,10 +326,10 @@ const AnalyticsDashboard = () => {
   return (
     <SafeAreaView
       style={{ flex: 1, minHeight: height, maxHeight: "auto" }}
-      className="bg-white p-4"
+      className={`${isDarkMode ? 'bg-background-dark' : 'bg-white'} p-4`}
     >
       <View className="flex-1">
-        <Text className="text-black text-2xl font-black text-center mb-4">
+        <Text className={`${isDarkMode ? 'text-text-dark' : 'text-black'} text-2xl font-black text-center mb-4`}>
           Analytics
         </Text>
 
@@ -339,10 +341,10 @@ const AnalyticsDashboard = () => {
               cover={0.8}
             />
             <View style={styles.gauge}>
-              <Text className="text-purple-700 text-2xl font-extrabold">
+              <Text className={`text-purple-700 text-2xl font-extrabold ${isDarkMode ? 'opacity-90' : 'opacity-100'}`}>
                 {totalViews}
               </Text>
-              <Text className="text-black text-base">Views</Text>
+              <Text className={`${isDarkMode ? 'text-text-dark' : 'text-black'} text-base`}>Views</Text>
             </View>
           </View>
 
@@ -353,60 +355,55 @@ const AnalyticsDashboard = () => {
               cover={0.8}
             />
             <View style={styles.gauge}>
-              <Text className="text-purple-700 text-2xl font-extrabold">
+              <Text className={`text-purple-700 text-2xl font-extrabold ${isDarkMode ? 'opacity-90' : 'opacity-100'}`}>
                 {totalTime}
               </Text>
-              <Text className="text-black text-base">Watch Time</Text>
+              <Text className={`${isDarkMode ? 'text-text-dark' : 'text-black'} text-base`}>Watch Time</Text>
             </View>
           </View>
         </View>
 
         <TouchableOpacity
-  className="bg-purple-700 p-2 rounded mt-4"
-  onPress={() => setEditModalVisible(true)}
->
-  <Text className="text-white text-center">Edit Username : {username}</Text>
-</TouchableOpacity>
-
+          className={`${isDarkMode ? 'bg-primary-dark' : 'bg-purple-700'} p-2 rounded mt-4`}
+          onPress={() => setEditModalVisible(true)}
+        >
+          <Text className="text-white text-center">Edit Username : {username}</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity 
-        className="bg-purple-700 my-2 p-3 mt-4 w-full rounded" 
-        onPress={exportData}
-      >
-        <Text className="text-white text-center font-bold">EXPORT</Text>
-      </TouchableOpacity>
+          className={`${isDarkMode ? 'bg-primary-dark' : 'bg-purple-700'} my-2 p-3 mt-4 w-full rounded`} 
+          onPress={exportData}
+        >
+          <Text className="text-white text-center font-bold">EXPORT</Text>
+        </TouchableOpacity>
 
         <View className="flex-row justify-between my-2 space-x-2 gap-2">
-        {/* SyncToCloud component taking half width */}
-        <View className="flex-1">
-          <SyncToCloud />
+          {/* SyncToCloud component taking half width */}
+          <View className="flex-1">
+            <SyncToCloud />
+          </View>
+          
+          {/* Delete button taking half width */}
+          <View className="flex-1">
+            <TouchableOpacity 
+              className={`${isDarkMode ? 'bg-gray-800' : 'bg-[#ECE6F0]'} p-3 w-full`} 
+              onPress={deleteData}
+            >
+              <Text className="text-red-500 text-center font-bold">DELETE USER DATA</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        
-        {/* Delete button taking half width */}
-        <View className="flex-1">
-        <TouchableOpacity 
-          className="bg-[#ECE6F0] p-3 w-full" 
-          onPress={deleteData}
-        >
-          <Text className="text-red-500 text-center font-bold">DELETE USER DATA</Text>
-        </TouchableOpacity>
-        </View>
-      </View>
-
 
         {/* Level, Language and Date Dropdowns */}
         <View className="flex-row justify-between mb-2">
           <View
-            className="flex flex-row gap-2 p-2"
+            className={`flex flex-row gap-2 p-2 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-[#ECE6F0] border-[#d5d5d9]'}`}
             style={{
               borderWidth: 1,
-              borderColor: "#d5d5d9",
-              backgroundColor: "#ECE6F0",
             }}
           >
-            <Text>Filter</Text>
-
-            <Ionicons name="filter" size={20} color="gray" />
+            <Text className={isDarkMode ? 'text-text-dark' : 'text-black'}>Filter</Text>
+            <Ionicons name="filter" size={20} color={isDarkMode ? "#F3F4F6" : "gray"} />
           </View>
 
           {/* Level Dropdown */}
@@ -420,22 +417,26 @@ const AnalyticsDashboard = () => {
             placeholder="Select Level"
             style={{
               borderWidth: 1,
-              borderColor: "#d5d5d9",
-              backgroundColor: "#ECE6F0",
+              borderColor: isDarkMode ? "#374151" : "#d5d5d9",
+              backgroundColor: isDarkMode ? "#1F2937" : "#ECE6F0",
               borderRadius: 0,
               paddingHorizontal: 5,
               minHeight: 35,
             }}
+            textStyle={{
+              color: isDarkMode ? "#F3F4F6" : "#000000",
+            }}
             dropDownContainerStyle={{
-              backgroundColor: "#ECE6F0",
-              borderColor: "#d5d5d9",
+              backgroundColor: isDarkMode ? "#1F2937" : "#ECE6F0",
+              borderColor: isDarkMode ? "#374151" : "#d5d5d9",
               zIndex: 1000,
               borderRadius: 0,
             }}
+            theme={isDarkMode ? "DARK" : "LIGHT"}
           />
 
-           {/* Language Dropdown */}
-           <DropDownPicker
+          {/* Language Dropdown */}
+          <DropDownPicker
             open={languageOpen}
             value={selectedLanguage}
             items={languageItems}
@@ -445,126 +446,114 @@ const AnalyticsDashboard = () => {
             placeholder="Select Lang"
             style={{
               borderWidth: 1,
-              borderColor: "#d5d5d9",
-              backgroundColor: "#ECE6F0",
+              borderColor: isDarkMode ? "#374151" : "#d5d5d9",
+              backgroundColor: isDarkMode ? "#1F2937" : "#ECE6F0",
               borderRadius: 0,
               paddingHorizontal: 5,
               minHeight: 35,
             }}
+            textStyle={{
+              color: isDarkMode ? "#F3F4F6" : "#000000",
+            }}
             dropDownContainerStyle={{
-              backgroundColor: "#ECE6F0",
-              borderColor: "#d5d5d9",
+              backgroundColor: isDarkMode ? "#1F2937" : "#ECE6F0",
+              borderColor: isDarkMode ? "#374151" : "#d5d5d9",
               zIndex: 1000,
               borderRadius: 0,
             }}
+            theme={isDarkMode ? "DARK" : "LIGHT"}
           />
-
         </View>
 
-         {/* Date Range Filter Section */}
-         <View className="flex-row mb-2 w-full gap-2">
-            {/* Start Date Picker */}
+        {/* Date Range Filter Section */}
+        <View className="flex-row mb-2 w-full gap-2">
+          {/* Start Date Picker */}
+          <TouchableOpacity 
+            onPress={() => setShowStartDatePicker(true)}
+            style={{
+              borderWidth: 1,
+              borderColor: isDarkMode ? "#374151" : "#d5d5d9",
+              backgroundColor: isDarkMode ? "#1F2937" : "#ECE6F0",
+              padding: 8,
+              flexDirection: 'row',
+              alignItems: 'center',
+              flex: 1,
+            }}
+          >
+            <Ionicons name="calendar-outline" size={16} color={isDarkMode ? "#F3F4F6" : "gray"} style={{marginRight: 4}} />
+            <Text className={isDarkMode ? 'text-text-dark' : 'text-black'}>
+              {startDate ? formatDate(startDate) : "Start Date"}
+            </Text>
+          </TouchableOpacity>
+          
+          {/* End Date Picker */}
+          <TouchableOpacity 
+            onPress={() => setShowEndDatePicker(true)}
+            style={{
+              borderWidth: 1,
+              borderColor: isDarkMode ? "#374151" : "#d5d5d9",
+              backgroundColor: isDarkMode ? "#1F2937" : "#ECE6F0",
+              padding: 8,
+              flexDirection: 'row',
+              alignItems: 'center',
+              flex: 1,
+            }}
+          >
+            <Ionicons name="calendar-outline" size={16} color={isDarkMode ? "#F3F4F6" : "gray"} style={{marginRight: 4}} />
+            <Text className={isDarkMode ? 'text-text-dark' : 'text-black'}>
+              {endDate ? formatDate(endDate) : "End Date"}
+            </Text>
+          </TouchableOpacity>
+          
+          {/* Reset Button */}
+          {(startDate || endDate) && (
             <TouchableOpacity 
-              onPress={() => setShowStartDatePicker(true)}
+              onPress={resetDateFilters}
               style={{
                 borderWidth: 1,
-                borderColor: "#d5d5d9",
-                backgroundColor: "#ECE6F0",
+                borderColor: isDarkMode ? "#374151" : "#d5d5d9",
+                backgroundColor: isDarkMode ? "#4C1D95" : "#7e22ce",
                 padding: 8,
-                flexDirection: 'row',
                 alignItems: 'center',
-                flex: 1,
+                justifyContent: 'center',
               }}
             >
-              <Ionicons name="calendar-outline" size={16} color="gray" style={{marginRight: 4}} />
-              <Text>{startDate ? formatDate(startDate) : "Start Date"}</Text>
+              <Ionicons name="close" size={16} color="white" />
             </TouchableOpacity>
-            
-            {/* End Date Picker */}
-            <TouchableOpacity 
-              onPress={() => setShowEndDatePicker(true)}
-              style={{
-                borderWidth: 1,
-                borderColor: "#d5d5d9",
-                backgroundColor: "#ECE6F0",
-                padding: 8,
-                flexDirection: 'row',
-                alignItems: 'center',
-                flex: 1,
-              }}
-            >
-              <Ionicons name="calendar-outline" size={16} color="gray" style={{marginRight: 4}} />
-              <Text>{endDate ? formatDate(endDate) : "End Date"}</Text>
-            </TouchableOpacity>
-            
-            {/* Reset Button */}
-            {(startDate || endDate) && (
-              <TouchableOpacity 
-                onPress={resetDateFilters}
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#d5d5d9",
-                  backgroundColor: "#7e22ce",
-                  padding: 8,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Ionicons name="close" size={16} color="white" />
-              </TouchableOpacity>
-            )}
-          </View>
-        
-        
-        {/* Date Pickers (hidden by default) */}
-        {showStartDatePicker && (
-          <DateTimePicker
-            value={startDate || new Date()}
-            mode="date"
-            display="default"
-            onChange={onStartDateChange}
-          />
-        )}
-        
-        {showEndDatePicker && (
-          <DateTimePicker
-            value={endDate || new Date()}
-            mode="date"
-            display="default"
-            onChange={onEndDateChange}
-            minimumDate={startDate || undefined}
-          />
-        )}
-
+          )}
+        </View>
+      
         <View
           style={{
-            borderColor: "#d5d5d9",
-            backgroundColor: "#ECE6F0",
+            borderWidth: 1,
+            borderColor: isDarkMode ? "#374151" : "#d5d5d9",
+            backgroundColor: isDarkMode ? "#1F2937" : "#ECE6F0",
           }}
-          className="border px-4 mb-3 flex-row items-center bg-white"
+          className="px-4 mb-3 flex-row items-center"
         >
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons name="close-circle" size={20} color="gray" />
+              <Ionicons name="close-circle" size={20} color={isDarkMode ? "#F3F4F6" : "gray"} />
             </TouchableOpacity>
           )}
 
           <TextInput
-            className="flex-1 text-black"
+            className={`flex-1 ${isDarkMode ? 'text-text-dark' : 'text-black'}`}
             placeholder="Search by title"
+            placeholderTextColor={isDarkMode ? "#9CA3AF" : "#6B7280"}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
 
           <TouchableOpacity className="pl-2">
-            <Ionicons name="search" size={20} color="purple" />
+            <Ionicons name="search" size={20} color={isDarkMode ? "#8B5CF6" : "purple"} />
           </TouchableOpacity>
         </View>
 
         <View className="flex flex-row justify-between items-end mb-2">
-          <Text className="text-2xl font-black">Videos</Text>
+          <Text className={`text-2xl font-black ${isDarkMode ? 'text-text-dark' : 'text-black'}`}>Videos</Text>
           <View className="flex flex-row w-[205px]">
-            <Text className="bg-purple-700 text-white text-sm text-center py-[0.6rem] flex items-center justify-center w-[80px] h-[35px]">
+            <Text className={`${isDarkMode ? 'bg-primary-dark' : 'bg-purple-700'} text-white text-sm text-center py-[0.6rem] flex items-center justify-center w-[80px] h-[35px]`}>
               Sort By
             </Text>
             <DropDownPicker
@@ -581,26 +570,30 @@ const AnalyticsDashboard = () => {
                 alignSelf: "center",
                 marginBottom: 0,
               }}
-              textStyle={{ fontSize: 12 }}
+              textStyle={{ 
+                fontSize: 12,
+                color: isDarkMode ? "#F3F4F6" : "#000000", 
+              }}
               arrowIconStyle={{ marginHorizontal: -5 }}
               modalAnimationType="slide"
               placeholder={"Select"}
               style={{
                 borderWidth: 1,
-                borderColor: "#d5d5d9",
-                backgroundColor: "#ECE6F0",
+                borderColor: isDarkMode ? "#374151" : "#d5d5d9",
+                backgroundColor: isDarkMode ? "#1F2937" : "#ECE6F0",
                 borderRadius: 0,
                 paddingHorizontal: 5,
                 minHeight: 35,
                 zIndex: 100,
               }}
               dropDownContainerStyle={{
-                backgroundColor: "#ECE6F0",
+                backgroundColor: isDarkMode ? "#1F2937" : "#ECE6F0",
                 borderWidth: 1,
-                borderColor: "#d5d5d9",
+                borderColor: isDarkMode ? "#374151" : "#d5d5d9",
                 borderRadius: 0,
                 gap: 10,
               }}
+              theme={isDarkMode ? "DARK" : "LIGHT"}
             />
           </View>
         </View>
@@ -609,8 +602,8 @@ const AnalyticsDashboard = () => {
           data={filteredData}
           keyExtractor={(_, index) => index.toString()}
           renderItem={({ item }) => (
-            <View className="flex-row justify-between border-b border-white py-2">
-              <View className="flex flex-row items-center justify-between border-b-[1px] border-gray-300 h-fit min-h-[130px]">
+            <View className={`flex-row justify-between border-b ${isDarkMode ? 'border-gray-800' : 'border-white'} py-2`}>
+              <View className={`flex flex-row items-center justify-between border-b-[1px] ${isDarkMode ? 'border-gray-700' : 'border-gray-300'} h-fit min-h-[130px]`}>
                 <Image
                   source={
                     item.language === "en"
@@ -624,29 +617,29 @@ const AnalyticsDashboard = () => {
 
                 {/* Video Details */}
                 <View className="flex w-1/2 ml-2 justify-between items-start gap-0 min-h-[100px]">
-                  <Text className="text-left text-lg w-full font-bold break-words">
+                  <Text className={`text-left text-lg w-full font-bold break-words ${isDarkMode ? 'text-text-dark' : 'text-black'}`}>
                     {item.language === "en"
                       ? item.english_title
                       : item.punjabi_title}
                   </Text>
                   <View className="flex gap-0">
-                    <Text className="text-sm font-bold text-purple-700">
+                    <Text className={`text-sm font-bold ${isDarkMode ? 'text-purple-400' : 'text-purple-700'}`}>
                       Level: {item.level}
                     </Text>
 
-                    <Text className="text-sm font-bold text-purple-700">
+                    <Text className={`text-sm font-bold ${isDarkMode ? 'text-purple-400' : 'text-purple-700'}`}>
                       Watch Time: {item.total_time_day} s
                     </Text>
 
-                    <Text className="text-sm font-bold text-purple-700">
+                    <Text className={`text-sm font-bold ${isDarkMode ? 'text-purple-400' : 'text-purple-700'}`}>
                       Total Views: {item.total_views_day}
                     </Text>
 
-                    <Text className="text-sm font-bold text-purple-700">
+                    <Text className={`text-sm font-bold ${isDarkMode ? 'text-purple-400' : 'text-purple-700'}`}>
                       Watched in:{" "}
                       {item.language === "en" ? "English" : "Punjabi"}
                     </Text>
-                    <Text className="text-sm font-bold text-purple-700">
+                    <Text className={`text-sm font-bold ${isDarkMode ? 'text-purple-400' : 'text-purple-700'}`}>
                       Last Watched: {item.date}
                     </Text>
                   </View>
@@ -658,58 +651,59 @@ const AnalyticsDashboard = () => {
         
       </View>
       <Modal
-  animationType="slide"
-  transparent={true}
-  visible={editModalVisible}
-  onRequestClose={() => setEditModalVisible(false)}
->
-  <View className="flex-1 justify-center items-center bg-black/50">
-    <View className="bg-white rounded-xl w-4/5 p-4">
-        <>
-          <Text className="text-lg font-bold mb-2">Edit Username from {username} to:</Text>
+        animationType="slide"
+        transparent={true}
+        visible={editModalVisible}
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl w-4/5 p-4`}>
+              <>
+                <Text className={`text-lg font-bold mb-2 ${isDarkMode ? 'text-text-dark' : 'text-black'}`}>
+                  Edit Username from {username} to:
+                </Text>
 
-          <TextInput
-            className="border border-gray-300 rounded p-2 mb-4"
-            placeholder="Enter new username"
-            value={newUsername}
-            onChangeText={setNewUsername}
-          />
-          <Text className="text-lg font-bold mb-2">warning:</Text>
-          <View className="flex-row justify-between">
-            <TouchableOpacity
-              className="bg-gray-300 px-4 py-2 rounded"
-              onPress={() => setEditModalVisible(false)}
-            >
-              <Text>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="bg-purple-700 px-4 py-2 rounded"
-              onPress={() => {
-                if (newUsername.trim()) {
-                  setUsername(newUsername);
-                  deleteData();
-                  editUserName(db, userId!, newUsername)
-                    .then(() => {
-                      setEditSuccess(true);
+                <TextInput
+                  className={`border rounded p-2 mb-4 ${isDarkMode ? 'border-gray-700 bg-gray-700 text-text-dark' : 'border-gray-300 text-black'}`}
+                  placeholder="Enter new username"
+                  placeholderTextColor={isDarkMode ? "#9CA3AF" : "#6B7280"}
+                  value={newUsername}
+                  onChangeText={setNewUsername}
+                />
+                <Text className={`text-lg font-bold mb-2 ${isDarkMode ? 'text-text-dark' : 'text-black'}`}>warning:</Text>
+                <View className="flex-row justify-between">
+                  <TouchableOpacity
+                    className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'} px-4 py-2 rounded`}
+                    onPress={() => setEditModalVisible(false)}
+                  >
+                    <Text className={isDarkMode ? 'text-text-dark' : 'text-black'}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    className={`${isDarkMode ? 'bg-primary-dark' : 'bg-purple-700'} px-4 py-2 rounded`}
+                    onPress={() => {
+                      if (newUsername.trim()) {
+                        setUsername(newUsername);
+                        deleteData();
+                        editUserName(db, userId!, newUsername)
+                          .then(() => {
+                            setEditSuccess(true);
 
-                      setTimeout(() => {
-                        setEditModalVisible(false);
-                        setEditSuccess(false);
-                      }, 1500);
-                    });
-                  setNewUsername("");  
-                }
-              }}
-            >
-              <Text className="text-white">Save</Text>
-            </TouchableOpacity>
+                            setTimeout(() => {
+                              setEditModalVisible(false);
+                              setEditSuccess(false);
+                            }, 1500);
+                          });
+                        setNewUsername("");  
+                      }
+                    }}
+                  >
+                    <Text className="text-white">Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
           </View>
-        </>
-    </View>
-  </View>
-</Modal>
-
-
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

@@ -1,12 +1,22 @@
 import { Stack } from "expo-router";
-import { useState, useEffect } from "react";
-import { View } from "react-native";
-import Animated, { Easing, useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
-import { Asset } from "expo-asset";
+import { useTheme } from "../themeContext";
+import React from "react";
 
-export default function Layout() { 
+export default function Layout() {
+  const { isDarkMode } = useTheme();
+  
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
+        },
+        headerTintColor: isDarkMode ? '#F3F4F6' : '#1F2937',
+        contentStyle: {
+          backgroundColor: isDarkMode ? '#121212' : '#FFFFFF',
+        },
+      }}
+    >
       <Stack.Screen name="[id]" options={{ headerShown: false }} />
     </Stack>
   );
