@@ -21,6 +21,7 @@ interface User {
 
 interface VideoAnalytics {
   id: number;
+  name:string;
   video_id: number;
   english_title?: string;
   punjabi_title?: string;
@@ -124,6 +125,7 @@ const SyncToCloud = () => {
               .from("video_analytics")
               .upsert({
                 user_id: user.id,
+                name:user.user_name,
                 video_id: analytics.video_id,
                 english_title: analytics.english_title,
                 punjabi_title: analytics.punjabi_title,

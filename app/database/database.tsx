@@ -70,6 +70,7 @@ export const initializeDatabase = async (db: SQLiteDatabase) => {
     try {
       const analytics = await db.getAllAsync<{
         id: number;
+        name: string;
         video_id: number;
         date: string;
         total_views_day: number;
