@@ -57,6 +57,7 @@ const VideoList = () => {
   const { role, setRole } = useUser();
   const [open, setOpen] = useState(false);
   const [language, setLanguage] = useState("en");
+  const [loading, setLoading] = useState(true);
   const [items] = useState([
     { label: "English", value: "en" },
     { label: "Punjabi", value: "pa" },
@@ -69,6 +70,16 @@ const VideoList = () => {
   // Load saved languages when component mounts
   useEffect(() => {
     const loadLanguages = async () => {
+      const savedLanguage = await AsyncStorage.getItem('languageDropdown');
+      if (savedLanguage) {
+        setLanguage(savedLanguage);
+        const newVideoLanguages: VideoLanguages = {};
+        videoDetails.forEach((item) => {
+          newVideoLanguages[item.id] = savedLanguage;
+        }
+        );
+        setVideoLanguages(newVideoLanguages);
+      }
       const savedLanguages = await AsyncStorage.getItem('videoLanguages');
       if (savedLanguages) {
         setVideoLanguages(JSON.parse(savedLanguages));
@@ -77,6 +88,7 @@ const VideoList = () => {
       if (savedLevel) {
         setLevel(savedLevel);
       }
+      setLoading(false);
     };
     loadLanguages();
   }, []);
@@ -91,8 +103,10 @@ const VideoList = () => {
         // console.log("Resetting languages to default:", resetLevel);
         setVideoLanguages(resetLanguages);
         setLevel("all");
+        setLanguage("en");
         await AsyncStorage.setItem("videoLanguages", JSON.stringify(resetLanguages));
         await AsyncStorage.setItem("levelDropdown", "all");
+        await AsyncStorage.setItem('languageDropdown', "en");
       }
     };
 
@@ -137,6 +151,8 @@ const VideoList = () => {
   const handleLanguageChange = (callback: (prevValue: string) => string) => {
     const newValue = callback(language);
     setLanguage(newValue);
+    console.log("Selected Language:", newValue);
+    AsyncStorage.setItem('languageDropdown', newValue);
     const newVideoLanguages: VideoLanguages = {};
     videoDetails.forEach((item) => {
       newVideoLanguages[item.id] = newValue;
@@ -210,8 +226,22 @@ const VideoList = () => {
         </TouchableOpacity>
       </View>
 
-
-      <View>
+      {
+  loading ? (
+    <FlatList
+      data={[1, 2, 3, 4]}
+      keyExtractor={(item) => item.toString()}
+      renderItem={() => (
+        <View className="flex flex-row justify-between p-4 border-b-[1px] border-gray-100 h-[130px]">
+          <View className="bg-gray-100 w-[45%] h-[100px] rounded" />
+          <View className="w-[50%] pl-2 justify-between">
+            <View className="bg-gray-100 h-5 w-3/4 rounded mb-2" />
+            <View className="bg-gray-100 h-5 w-1/2 rounded" />
+          </View>
+        </View>
+      )}
+    />
+  ) : (<View>
         <FlatList
           contentContainerStyle={{ paddingBottom: 140 }}
           data={videoDetails.filter(item => level === "all" || item.level === level)}
@@ -251,6 +281,7 @@ const VideoList = () => {
           )}
         />
       </View>
+        )}
     </View>
   );
 };

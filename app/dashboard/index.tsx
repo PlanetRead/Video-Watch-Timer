@@ -365,7 +365,7 @@ const AnalyticsDashboard = () => {
   className="bg-purple-700 p-2 rounded mt-4"
   onPress={() => setEditModalVisible(true)}
 >
-  <Text className="text-white text-center">Edit Username</Text>
+  <Text className="text-white text-center">Edit Username : {username}</Text>
 </TouchableOpacity>
 
 
