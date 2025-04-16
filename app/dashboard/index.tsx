@@ -26,6 +26,7 @@ import { Modal } from "react-native";
 import { useTheme } from "../themeContext";
 import ThemeToggle from "@/components/ThemeToggle";
 
+
 // Define type for analytics data
 type AnalyticsData = {
   id: number;
@@ -62,24 +63,7 @@ const AnalyticsDashboard = () => {
    const [newUsername, setNewUsername] = useState("");
    const [editSuccess, setEditSuccess] = useState(false);
 
-   // Add saveUsername function
-   const saveUsername = () => {
-     if (newUsername.trim() && userId) {
-       setUsername(newUsername);
-       editUserName(db, userId, newUsername)
-         .then(() => {
-           setEditSuccess(true);
-           setTimeout(() => {
-             setEditModalVisible(false);
-             setEditSuccess(false);
-           }, 1500);
-         })
-         .catch(error => {
-           console.error("Error updating username:", error);
-         });
-       setNewUsername("");
-     }
-   };
+
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -294,35 +278,34 @@ const AnalyticsDashboard = () => {
   ];
 
   const exportData = async () => {
-    try {
-      if (filteredData.length === 0) {
-        console.log("No data to export");
-        return;
-      }
-
-      // Create CSV content
-      const csvData = filteredData.map(item => ({
-        'Video Title': item.language === 'en' ? item.english_title : item.punjabi_title,
-        'Level': item.level,
-        'Language': item.language === 'en' ? 'English' : 'Punjabi',
-        'Views': item.total_views_day,
-        'Watch Time (sec)': item.total_time_day,
-        'Date': item.date
-      }));
-
-      const csv = Papa.unparse(csvData);
-      
-      // Save to file
-      const fileUri = FileSystem.documentDirectory + 'analytics_export.csv';
-      await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: FileSystem.EncodingType.UTF8 });
-      
-      // Share the file
-      await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', dialogTitle: 'Export Analytics Data' });
-      
-    } catch (error) {
-      console.error("Error exporting data:", error);
+   try {
+    if (filteredData.length === 0) {
+      console.log("No data to export");
+      return;
     }
-  };
+
+    // Create CSV content
+    const csvData = filteredData.map(item => ({
+      'Video Title': item.language === 'en' ? item.english_title : item.punjabi_title,
+      'Level': item.level,
+      'Language': item.language === 'en' ? 'English' : 'Punjabi',
+      'Views': item.total_views_day,
+      'Watch Time (sec)': item.total_time_day,
+      'Date': item.date
+    }));
+
+    const csv = Papa.unparse(csvData);
+    
+    // Save to file
+    const fileUri = FileSystem.documentDirectory + 'analytics_export.csv';
+    await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+    
+    // Share the file
+    await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', dialogTitle: 'Export Analytics Data' });
+  } catch (error) {
+    console.error("Error exporting data:", error);
+  }
+  }
 
   const deleteData = async () => {
     try {
@@ -331,11 +314,10 @@ const AnalyticsDashboard = () => {
       setFilteredData([]);
       setTotalTime(0);
       setTotalViews(0);
-      console.log("All data deleted successfully");
     } catch (error) {
       console.error("Error deleting data:", error);
     }
-  };
+  }
 
    // Format date for display
    const formatDate = (date:Date) => {
@@ -380,7 +362,7 @@ const AnalyticsDashboard = () => {
           <Text className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Total Watch Time</Text>
         </View>
       </View>
-      
+
       {/* SyncToCloud Component */}
       <View className={`p-3 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-md mb-2`}>
         <SyncToCloud />
@@ -603,7 +585,20 @@ const AnalyticsDashboard = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 className="px-4 py-2 rounded-md bg-purple-600"
-                onPress={saveUsername}
+                onPress={() => {
+                  if (newUsername.trim() && userId) {
+                    setUsername(newUsername);
+                    editUserName(db, userId, newUsername)
+                      .then(() => {
+                        setEditSuccess(true);
+                        setTimeout(() => {
+                          setEditModalVisible(false);
+                          setEditSuccess(false);
+                        }, 1500);
+                      });
+                    setNewUsername("");
+                  }
+                }}
               >
                 <Text className="text-white">Save</Text>
               </TouchableOpacity>
