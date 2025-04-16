@@ -11,8 +11,10 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SQLiteProvider } from 'expo-sqlite';
 import { initializeDatabase } from './database/database';
 import { UserProvider } from './userContext';
+import { ThemeProvider } from './themeContext';
 import { downloadVideo,clearDownloadedVideos } from "./video/videoDownlaoder";
 import { ProgressBar } from 'react-native-paper';
+import React from 'react';
 
 
 // Prevent auto-hide at the start
@@ -113,57 +115,58 @@ export default function RootLayout() {
     transform: [{ scale: scale.value }],
     opacity: opacity.value,
   }));
-
-
   return (
     <>
-  { isLoading && (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#6B21A8" }}>
-        <StatusBar hidden={true} />
-        <Animated.Image source={splash_img} style={[{ width: 400, height: 400 }, animatedStyle]} resizeMode="contain" />
-      </View>
-  )}
-  
-  { !isLoading && !videoAssetsLoaded && (
-        //show a popup of number of videos downloading and stuff.... a progress bar modal
-          <Modal visible={!videoAssetsLoaded} transparent={true} animationType="fade">
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
-              <View style={{ backgroundColor: "white", padding: 20, borderRadius: 10, width: 250, alignItems: "center" }}>
-                <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10, color: "#333" }}>
-                  Downloading Videos...
-                </Text>
+    { isLoading && (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#6B21A8" }}>
+          <StatusBar hidden={true} />
+          <Animated.Image source={splash_img} style={[{ width: 400, height: 400 }, animatedStyle]} resizeMode="contain" />
+        </View>
+    )}
+    
+    { !isLoading && !videoAssetsLoaded && (
+          //show a popup of number of videos downloading and stuff.... a progress bar modal
+            <Modal visible={!videoAssetsLoaded} transparent={true} animationType="fade">
+              <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
+                <View style={{ backgroundColor: "white", padding: 20, borderRadius: 10, width: 250, alignItems: "center" }}>
+                  <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10, color: "#333" }}>
+                    Downloading Videos...
+                  </Text>
 
-                {/* Show number of videos downloaded out of total */}
-                <Text style={{ fontSize: 14, color: "#555", marginBottom: 5 }}>
-                  {downloadProgress} videos downloaded out of {VIDEO_LIST.length}
-                </Text>
+                  {/* Show number of videos downloaded out of total */}
+                  <Text style={{ fontSize: 14, color: "#555", marginBottom: 5 }}>
+                    {downloadProgress} videos downloaded out of {VIDEO_LIST.length}
+                  </Text>
 
-                {/* Progress Bar */}
-                <ProgressBar progress={downloadProgress/VIDEO_LIST.length} color="#6B21A8" style={{ height: 10, width: 200, borderRadius: 5 }} />
+                  {/* Progress Bar */}
+                  <ProgressBar progress={downloadProgress/VIDEO_LIST.length} color="#6B21A8" style={{ height: 10, width: 200, borderRadius: 5 }} />
 
-                {/* Optional: Estimated time or animated loading */}
-                <Text style={{ fontSize: 12, color: "#888", marginTop: 5 }}>
-                  Please wait...
-                </Text>
+                  {/* Optional: Estimated time or animated loading */}
+                  <Text style={{ fontSize: 12, color: "#888", marginTop: 5 }}>
+                    Please wait...
+                  </Text>
+                </View>
               </View>
-            </View>
-          </Modal>
-  )}
-  
-  { !isLoading && videoAssetsLoaded && (
-      <SQLiteProvider databaseName="test.db" onInit={initializeDatabase}>
-        <UserProvider>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="video" options={{ headerShown: false }} />
-            <Stack.Screen name="pdf" options={{ headerShown: false }} />
-            <Stack.Screen name="login" options={{ headerShown: false }} />
-            <Stack.Screen name="dashboard" options={{ headerShown: false }} />
-          </Stack>
-          <StatusBar style="light" />
-        </UserProvider>
-      </SQLiteProvider>
-  )}
+            </Modal>
+    )}
+    
+    { !isLoading && videoAssetsLoaded && (
+        <SQLiteProvider databaseName="test.db" onInit={initializeDatabase}>
+          <ThemeProvider>
+            <UserProvider>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="video" options={{ headerShown: false }} />
+                <Stack.Screen name="pdf" options={{ headerShown: false }} />
+                <Stack.Screen name="login" options={{ headerShown: false }} />
+                <Stack.Screen name="dashboard" options={{ headerShown: false }} />
+                <Stack.Screen name="settings" options={{ headerShown: false }} />
+              </Stack>
+              <StatusBar style="auto" />
+            </UserProvider>
+          </ThemeProvider>
+        </SQLiteProvider>
+    )}
     </>
   )
   

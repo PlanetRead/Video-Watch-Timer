@@ -23,8 +23,8 @@ import * as Sharing from 'expo-sharing';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { Modal } from "react-native";
-import { create } from "react-test-renderer";
-
+import { useTheme } from "../themeContext";
+import ThemeToggle from "@/components/ThemeToggle";
 
 // Define type for analytics data
 type AnalyticsData = {
@@ -46,6 +46,7 @@ type AnalyticsData = {
 
 const AnalyticsDashboard = () => {
   const db = useSQLiteContext();
+  const { isDark } = useTheme();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -61,7 +62,24 @@ const AnalyticsDashboard = () => {
    const [newUsername, setNewUsername] = useState("");
    const [editSuccess, setEditSuccess] = useState(false);
 
-
+   // Add saveUsername function
+   const saveUsername = () => {
+     if (newUsername.trim() && userId) {
+       setUsername(newUsername);
+       editUserName(db, userId, newUsername)
+         .then(() => {
+           setEditSuccess(true);
+           setTimeout(() => {
+             setEditModalVisible(false);
+             setEditSuccess(false);
+           }, 1500);
+         })
+         .catch(error => {
+           console.error("Error updating username:", error);
+         });
+       setNewUsername("");
+     }
+   };
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -178,10 +196,9 @@ const AnalyticsDashboard = () => {
   }, [sortoption]);
 
   useEffect(() => {
-    console.log("AnalyticsDashboard Mounted");
-
+    
     return () => {
-      console.log("AnalyticsDashboard Unmounted");
+      
     };
   }, []);
 
@@ -277,43 +294,48 @@ const AnalyticsDashboard = () => {
   ];
 
   const exportData = async () => {
-   try {
-    alert("Exporting data to CSV");
+    try {
+      if (filteredData.length === 0) {
+        console.log("No data to export");
+        return;
+      }
 
-    // Convert JSON data to CSV
-    const csvContent = Papa.unparse(analyticsData);
+      // Create CSV content
+      const csvData = filteredData.map(item => ({
+        'Video Title': item.language === 'en' ? item.english_title : item.punjabi_title,
+        'Level': item.level,
+        'Language': item.language === 'en' ? 'English' : 'Punjabi',
+        'Views': item.total_views_day,
+        'Watch Time (sec)': item.total_time_day,
+        'Date': item.date
+      }));
 
-    // Define file path
-    const fileUri = `${FileSystem.documentDirectory}analytics.csv`;
-
-    // Write the CSV file
-    await FileSystem.writeAsStringAsync(fileUri, csvContent, { encoding: FileSystem.EncodingType.UTF8 });
-
-    console.log('CSV file saved successfully:', fileUri);
-
-    // Share the file
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(fileUri);
-    } else {
-      alert("Sharing is not available on this device.");
+      const csv = Papa.unparse(csvData);
+      
+      // Save to file
+      const fileUri = FileSystem.documentDirectory + 'analytics_export.csv';
+      await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+      
+      // Share the file
+      await Sharing.shareAsync(fileUri, { mimeType: 'text/csv', dialogTitle: 'Export Analytics Data' });
+      
+    } catch (error) {
+      console.error("Error exporting data:", error);
     }
-  } catch (error) {
-    console.error("Error exporting CSV:", error);
-  }
-  }
+  };
 
   const deleteData = async () => {
     try {
-      alert("Deleting all user data");
       await deleteAllUserData(db);
-      alert("All user data deleted successfully");
-      setAnalyticsData([]); // Clear the local state
+      setAnalyticsData([]);
+      setFilteredData([]);
       setTotalTime(0);
       setTotalViews(0);
+      console.log("All data deleted successfully");
     } catch (error) {
-      console.error("Error deleting user data:", error);
+      console.error("Error deleting data:", error);
     }
-  }
+  };
 
    // Format date for display
    const formatDate = (date:Date) => {
@@ -322,407 +344,305 @@ const AnalyticsDashboard = () => {
   };
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, minHeight: height, maxHeight: "auto" }}
-      className="bg-white p-4"
-    >
-      <View className="flex-1">
-        <Text className="text-black text-2xl font-black text-center mb-4">
-          Analytics
-        </Text>
-
-        <View className="flex flex-row gap-4 justify-around">
-          <View>
-            <PieChart
-              widthAndHeight={widthAndHeight}
-              series={series}
-              cover={0.8}
-            />
-            <View style={styles.gauge}>
-              <Text className="text-purple-700 text-2xl font-extrabold">
-                {totalViews}
-              </Text>
-              <Text className="text-black text-base">Views</Text>
-            </View>
-          </View>
-
-          <View>
-            <PieChart
-              widthAndHeight={widthAndHeight}
-              series={series}
-              cover={0.8}
-            />
-            <View style={styles.gauge}>
-              <Text className="text-purple-700 text-2xl font-extrabold">
-                {totalTime}
-              </Text>
-              <Text className="text-black text-base">Watch Time</Text>
-            </View>
-          </View>
+    <SafeAreaView className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
+      {/* Header with username and edit option */}
+      <View className={`flex-row justify-between items-center p-4 ${isDark ? 'bg-gray-800' : 'bg-purple-700'}`}>
+        <View className="flex-row items-center">
+          <Ionicons name="person-circle" size={30} color={isDark ? "#A78BFA" : "white"} />
+          <Text className={`text-xl font-bold ml-2 ${isDark ? 'text-white' : 'text-white'}`}>
+            {username}
+          </Text>
         </View>
-
-        <TouchableOpacity
-  className="bg-purple-700 p-2 rounded mt-4"
-  onPress={() => setEditModalVisible(true)}
->
-  <Text className="text-white text-center">Edit Username</Text>
-</TouchableOpacity>
-
-
-        <TouchableOpacity 
-        className="bg-purple-700 my-2 p-3 mt-4 w-full rounded" 
-        onPress={exportData}
-      >
-        <Text className="text-white text-center font-bold">EXPORT</Text>
-      </TouchableOpacity>
-
-        <View className="flex-row justify-between my-2 space-x-2 gap-2">
-        {/* SyncToCloud component taking half width */}
-        <View className="flex-1">
-          <SyncToCloud />
-        </View>
-        
-        {/* Delete button taking half width */}
-        <View className="flex-1">
-        <TouchableOpacity 
-          className="bg-[#ECE6F0] p-3 w-full" 
-          onPress={deleteData}
-        >
-          <Text className="text-red-500 text-center font-bold">DELETE USER DATA</Text>
-        </TouchableOpacity>
+        <View className="flex-row">
+          <ThemeToggle />
+          <TouchableOpacity 
+            className="ml-2"
+            onPress={() => {
+              setEditModalVisible(true);
+              setNewUsername(username);
+            }}
+          >
+            <Ionicons name="create-outline" size={25} color={isDark ? "#A78BFA" : "white"} />
+          </TouchableOpacity>
         </View>
       </View>
 
+      {/* Stats Overview */}
+      <View className={`flex-row justify-between p-4 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-md mb-2`}>
+        <View className="flex items-center">
+          <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{totalViews}</Text>
+          <Text className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Total Views</Text>
+        </View>
+        <View className="flex items-center">
+          <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+            {Math.floor(totalTime / 60)}m {totalTime % 60}s
+          </Text>
+          <Text className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Total Watch Time</Text>
+        </View>
+      </View>
 
-        {/* Level, Language and Date Dropdowns */}
-        <View className="flex-row justify-between mb-2">
-          <View
-            className="flex flex-row gap-2 p-2"
-            style={{
-              borderWidth: 1,
-              borderColor: "#d5d5d9",
-              backgroundColor: "#ECE6F0",
-            }}
-          >
-            <Text>Filter</Text>
+      {/* Search, Filter, and Sort Controls */}
+      <View className={`p-3 flex-row flex-wrap items-center gap-2 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-md mb-2`}>
+        {/* Search Bar */}
+        <View className={`flex-row items-center border ${isDark ? 'border-gray-700 bg-gray-700' : 'border-gray-300'} rounded-full px-3 py-1 flex-1 min-w-[150px]`}>
+          <Ionicons name="search" size={20} color={isDark ? "#A78BFA" : "#8B5CF6"} />
+          <TextInput
+            placeholder="Search videos..."
+            placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+            className={`ml-2 flex-1 ${isDark ? 'text-white' : 'text-gray-800'}`}
+            value={searchQuery}
+            onChangeText={(text) => setSearchQuery(text)}
+          />
+        </View>
 
-            <Ionicons name="filter" size={20} color="gray" />
-          </View>
-
-          {/* Level Dropdown */}
+        {/* Level Filter Dropdown */}
+        <View style={{ zIndex: 3000, minWidth: 120 }}>
           <DropDownPicker
             open={levelOpen}
             value={selectedLevel}
             items={levelItems}
-            setOpen={setLevelOpen}
-            setValue={(newValue) => setSelectedLevel(newValue)}
-            containerStyle={{ maxWidth: 125 }}
-            placeholder="Select Level"
+            setOpen={(val) => {
+              setLevelOpen(val);
+              if (open) setOpen(false);
+              if (languageOpen) setLanguageOpen(false);
+            }}
+            setValue={setSelectedLevel}
             style={{
-              borderWidth: 1,
-              borderColor: "#d5d5d9",
-              backgroundColor: "#ECE6F0",
-              borderRadius: 0,
-              paddingHorizontal: 5,
-              minHeight: 35,
+              backgroundColor: isDark ? '#374151' : '#FFFFFF',
+              borderColor: isDark ? '#4B5563' : '#E5E7EB',
+            }}
+            textStyle={{
+              color: isDark ? '#F9FAFB' : '#1F2937',
             }}
             dropDownContainerStyle={{
-              backgroundColor: "#ECE6F0",
-              borderColor: "#d5d5d9",
-              zIndex: 1000,
-              borderRadius: 0,
+              backgroundColor: isDark ? '#374151' : '#FFFFFF',
+              borderColor: isDark ? '#4B5563' : '#E5E7EB',
             }}
+            theme={isDark ? "DARK" : "LIGHT"}
           />
+        </View>
 
-           {/* Language Dropdown */}
-           <DropDownPicker
+        {/* Language Filter Dropdown */}
+        <View style={{ zIndex: 2000, minWidth: 120 }}>
+          <DropDownPicker
             open={languageOpen}
             value={selectedLanguage}
             items={languageItems}
-            setOpen={setLanguageOpen}
-            setValue={(newValue) => setSelectedLanguage(newValue)}
-            containerStyle={{ maxWidth: 125 }}
-            placeholder="Select Lang"
+            setOpen={(val) => {
+              setLanguageOpen(val);
+              if (open) setOpen(false);
+              if (levelOpen) setLevelOpen(false);
+            }}
+            setValue={setSelectedLanguage}
             style={{
-              borderWidth: 1,
-              borderColor: "#d5d5d9",
-              backgroundColor: "#ECE6F0",
-              borderRadius: 0,
-              paddingHorizontal: 5,
-              minHeight: 35,
+              backgroundColor: isDark ? '#374151' : '#FFFFFF',
+              borderColor: isDark ? '#4B5563' : '#E5E7EB',
+            }}
+            textStyle={{
+              color: isDark ? '#F9FAFB' : '#1F2937',
             }}
             dropDownContainerStyle={{
-              backgroundColor: "#ECE6F0",
-              borderColor: "#d5d5d9",
-              zIndex: 1000,
-              borderRadius: 0,
+              backgroundColor: isDark ? '#374151' : '#FFFFFF',
+              borderColor: isDark ? '#4B5563' : '#E5E7EB',
             }}
+            theme={isDark ? "DARK" : "LIGHT"}
           />
-
         </View>
+      </View>
 
-         {/* Date Range Filter Section */}
-         <View className="flex-row mb-2 w-full gap-2">
-            {/* Start Date Picker */}
-            <TouchableOpacity 
-              onPress={() => setShowStartDatePicker(true)}
-              style={{
-                borderWidth: 1,
-                borderColor: "#d5d5d9",
-                backgroundColor: "#ECE6F0",
-                padding: 8,
-                flexDirection: 'row',
-                alignItems: 'center',
-                flex: 1,
-              }}
-            >
-              <Ionicons name="calendar-outline" size={16} color="gray" style={{marginRight: 4}} />
-              <Text>{startDate ? formatDate(startDate) : "Start Date"}</Text>
-            </TouchableOpacity>
-            
-            {/* End Date Picker */}
-            <TouchableOpacity 
-              onPress={() => setShowEndDatePicker(true)}
-              style={{
-                borderWidth: 1,
-                borderColor: "#d5d5d9",
-                backgroundColor: "#ECE6F0",
-                padding: 8,
-                flexDirection: 'row',
-                alignItems: 'center',
-                flex: 1,
-              }}
-            >
-              <Ionicons name="calendar-outline" size={16} color="gray" style={{marginRight: 4}} />
-              <Text>{endDate ? formatDate(endDate) : "End Date"}</Text>
-            </TouchableOpacity>
-            
-            {/* Reset Button */}
-            {(startDate || endDate) && (
-              <TouchableOpacity 
-                onPress={resetDateFilters}
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#d5d5d9",
-                  backgroundColor: "#7e22ce",
-                  padding: 8,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Ionicons name="close" size={16} color="white" />
-              </TouchableOpacity>
-            )}
-          </View>
-        
-        
-        {/* Date Pickers (hidden by default) */}
-        {showStartDatePicker && (
-          <DateTimePicker
-            value={startDate || new Date()}
-            mode="date"
-            display="default"
-            onChange={onStartDateChange}
-          />
-        )}
-        
-        {showEndDatePicker && (
-          <DateTimePicker
-            value={endDate || new Date()}
-            mode="date"
-            display="default"
-            onChange={onEndDateChange}
-            minimumDate={startDate || undefined}
-          />
-        )}
+      {/* Date Filters and Export */}
+      <View className={`p-3 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-md mb-2 flex-row justify-between items-center`}>
+        <View className="flex-row items-center flex-wrap gap-2">
+          {/* Date Range Filters */}
+          <TouchableOpacity
+            onPress={() => setShowStartDatePicker(true)}
+            className={`border px-3 py-2 rounded-md flex-row items-center ${isDark ? 'border-gray-700 bg-gray-700' : 'border-gray-300'}`}
+          >
+            <Ionicons name="calendar-outline" size={18} color={isDark ? "#A78BFA" : "#8B5CF6"} />
+            <Text className={`ml-1 ${isDark ? 'text-white' : 'text-gray-800'}`}>
+              {startDate ? formatDate(startDate) : "Start Date"}
+            </Text>
+          </TouchableOpacity>
 
-        <View
-          style={{
-            borderColor: "#d5d5d9",
-            backgroundColor: "#ECE6F0",
-          }}
-          className="border px-4 mb-3 flex-row items-center bg-white"
-        >
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons name="close-circle" size={20} color="gray" />
+          <TouchableOpacity
+            onPress={() => setShowEndDatePicker(true)}
+            className={`border px-3 py-2 rounded-md flex-row items-center ${isDark ? 'border-gray-700 bg-gray-700' : 'border-gray-300'}`}
+          >
+            <Ionicons name="calendar-outline" size={18} color={isDark ? "#A78BFA" : "#8B5CF6"} />
+            <Text className={`ml-1 ${isDark ? 'text-white' : 'text-gray-800'}`}>
+              {endDate ? formatDate(endDate) : "End Date"}
+            </Text>
+          </TouchableOpacity>
+
+          {(startDate || endDate) && (
+            <TouchableOpacity
+              onPress={resetDateFilters}
+              className="px-3 py-2 rounded-md bg-red-500 flex-row items-center"
+            >
+              <Ionicons name="close-circle-outline" size={18} color="white" />
+              <Text className="ml-1 text-white">Clear</Text>
             </TouchableOpacity>
           )}
+        </View>
 
-          <TextInput
-            className="flex-1 text-black"
-            placeholder="Search by title"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+        {/* Export Button */}
+        <TouchableOpacity
+          onPress={exportData}
+          className="px-3 py-2 rounded-md bg-green-600 flex-row items-center"
+        >
+          <Ionicons name="download-outline" size={18} color="white" />
+          <Text className="ml-1 text-white">Export CSV</Text>
+        </TouchableOpacity>
+      </View>
+      
+      {/* Sort Dropdown */}
+      <View className={`p-3 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-md mb-2 z-20`} style={{ zIndex: 1000 }}>
+        <View style={{ maxWidth: 200 }}>
+          <DropDownPicker
+            open={open}
+            value={sortoption}
+            items={items}
+            setOpen={(val) => {
+              setOpen(val);
+              if (levelOpen) setLevelOpen(false);
+              if (languageOpen) setLanguageOpen(false);
+            }}
+            setValue={setSortOption}
+            placeholder="Sort by..."
+            style={{
+              backgroundColor: isDark ? '#374151' : '#FFFFFF',
+              borderColor: isDark ? '#4B5563' : '#E5E7EB',
+            }}
+            textStyle={{
+              color: isDark ? '#F9FAFB' : '#1F2937',
+            }}
+            dropDownContainerStyle={{
+              backgroundColor: isDark ? '#374151' : '#FFFFFF',
+              borderColor: isDark ? '#4B5563' : '#E5E7EB',
+            }}
+            theme={isDark ? "DARK" : "LIGHT"}
           />
-
-          <TouchableOpacity className="pl-2">
-            <Ionicons name="search" size={20} color="purple" />
-          </TouchableOpacity>
         </View>
+      </View>
 
-        <View className="flex flex-row justify-between items-end mb-2">
-          <Text className="text-2xl font-black">Videos</Text>
-          <View className="flex flex-row w-[205px]">
-            <Text className="bg-purple-700 text-white text-sm text-center py-[0.6rem] flex items-center justify-center w-[80px] h-[35px]">
-              Sort By
-            </Text>
-            <DropDownPicker
-              open={open}
-              value={sortoption}
-              items={items}
-              setOpen={setOpen}
-              setValue={(callback) => {
-                const newValue = callback(sortoption);
-                setSortOption(newValue);
-              }}
-              containerStyle={{
-                maxWidth: 125,
-                alignSelf: "center",
-                marginBottom: 0,
-              }}
-              textStyle={{ fontSize: 12 }}
-              arrowIconStyle={{ marginHorizontal: -5 }}
-              modalAnimationType="slide"
-              placeholder={"Select"}
-              style={{
-                borderWidth: 1,
-                borderColor: "#d5d5d9",
-                backgroundColor: "#ECE6F0",
-                borderRadius: 0,
-                paddingHorizontal: 5,
-                minHeight: 35,
-                zIndex: 100,
-              }}
-              dropDownContainerStyle={{
-                backgroundColor: "#ECE6F0",
-                borderWidth: 1,
-                borderColor: "#d5d5d9",
-                borderRadius: 0,
-                gap: 10,
-              }}
+      {/* Video List */}
+      <FlatList
+        data={filteredData}
+        className="z-10"
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <View 
+            className={`p-4 mx-3 my-2 rounded-xl flex-row ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-md`}
+          >
+            <Image
+              source={item.language === "en" ? item.thumbnail_en : item.thumbnail_punjabi}
+              className="w-[80px] h-[80px] rounded-md mr-3"
+              style={styles.thumbnail}
             />
-          </View>
-        </View>
-
-        <FlatList
-          data={filteredData}
-          keyExtractor={(_, index) => index.toString()}
-          renderItem={({ item }) => (
-            <View className="flex-row justify-between border-b border-white py-2">
-              <View className="flex flex-row items-center justify-between border-b-[1px] border-gray-300 h-fit min-h-[130px]">
-                <Image
-                  source={
-                    item.language === "en"
-                      ? item.thumbnail_en
-                      : item.thumbnail_punjabi
-                  }
-                  style={{ height: 100, width: "50%" }}
-                  resizeMode="contain"
-                  className="w-1/2"
-                />
-
-                {/* Video Details */}
-                <View className="flex w-1/2 ml-2 justify-between items-start gap-0 min-h-[100px]">
-                  <Text className="text-left text-lg w-full font-bold break-words">
-                    {item.language === "en"
-                      ? item.english_title
-                      : item.punjabi_title}
+            <View className="flex-1 justify-center">
+              <Text className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                {item.language === "en" ? item.english_title : item.punjabi_title}
+              </Text>
+              <View className="flex-row justify-between items-center mt-1">
+                <View className="flex-row items-center">
+                  <Ionicons name="eye-outline" size={16} color={isDark ? "#A78BFA" : "#8B5CF6"} />
+                  <Text className={`ml-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{item.total_views_day} views</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Ionicons name="time-outline" size={16} color={isDark ? "#A78BFA" : "#8B5CF6"} />
+                  <Text className={`ml-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    {Math.floor(item.total_time_day / 60)}m {item.total_time_day % 60}s
                   </Text>
-                  <View className="flex gap-0">
-                    <Text className="text-sm font-bold text-purple-700">
-                      Level: {item.level}
-                    </Text>
-
-                    <Text className="text-sm font-bold text-purple-700">
-                      Watch Time: {item.total_time_day} s
-                    </Text>
-
-                    <Text className="text-sm font-bold text-purple-700">
-                      Total Views: {item.total_views_day}
-                    </Text>
-
-                    <Text className="text-sm font-bold text-purple-700">
-                      Watched in:{" "}
-                      {item.language === "en" ? "English" : "Punjabi"}
-                    </Text>
-                    <Text className="text-sm font-bold text-purple-700">
-                      Last Watched: {item.date}
-                    </Text>
-                  </View>
+                </View>
+                <View className="flex-row items-center">
+                  <Ionicons name="calendar-outline" size={16} color={isDark ? "#A78BFA" : "#8B5CF6"} />
+                  <Text className={`ml-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{item.date}</Text>
                 </View>
               </View>
             </View>
-          )}
-        />
-        
-      </View>
-      <Modal
-  animationType="slide"
-  transparent={true}
-  visible={editModalVisible}
-  onRequestClose={() => setEditModalVisible(false)}
->
-  <View className="flex-1 justify-center items-center bg-black/50">
-    <View className="bg-white rounded-xl w-4/5 p-4">
-        <>
-          <Text className="text-lg font-bold mb-2">Edit Username from {username} to:</Text>
-          <TextInput
-            className="border border-gray-300 rounded p-2 mb-4"
-            placeholder="Enter new username"
-            value={newUsername}
-            onChangeText={setNewUsername}
-          />
-          <View className="flex-row justify-between">
-            <TouchableOpacity
-              className="bg-gray-300 px-4 py-2 rounded"
-              onPress={() => setEditModalVisible(false)}
-            >
-              <Text>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="bg-purple-700 px-4 py-2 rounded"
-              onPress={() => {
-                if (newUsername.trim()) {
-                  setUsername(newUsername);
-                  deleteData();
-                  editUserName(db, userId!, newUsername)
-                    .then(() => {
-                      setEditSuccess(true);
-
-                      setTimeout(() => {
-                        setEditModalVisible(false);
-                        setEditSuccess(false);
-                      }, 1500);
-                    });
-                  setNewUsername("");  
-                }
-              }}
-            >
-              <Text className="text-white">Save</Text>
-            </TouchableOpacity>
           </View>
-        </>
-    </View>
-  </View>
-</Modal>
+        )}
+      />
 
+      {/* Username Edit Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={editModalVisible}
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className={`p-6 rounded-lg w-[80%] ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+            <Text className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
+              Edit Username
+            </Text>
+            <TextInput
+              className={`border p-2 rounded-md mb-4 ${isDark ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-800'}`}
+              placeholder="Enter new username"
+              placeholderTextColor={isDark ? "#9CA3AF" : "#6B7280"}
+              value={newUsername}
+              onChangeText={setNewUsername}
+            />
+            {editSuccess && (
+              <Text className="text-green-500 mb-2">Username updated successfully!</Text>
+            )}
+            <View className="flex-row justify-end">
+              <TouchableOpacity
+                className="px-4 py-2 rounded-md bg-gray-500 mr-2"
+                onPress={() => {
+                  setEditModalVisible(false);
+                  setEditSuccess(false);
+                }}
+              >
+                <Text className="text-white">Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="px-4 py-2 rounded-md bg-purple-600"
+                onPress={saveUsername}
+              >
+                <Text className="text-white">Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
+      {/* Delete Data Button - Admin Access Only */}
+      <View className="p-4 flex items-center">
+        <TouchableOpacity
+          className="px-4 py-2 rounded-md bg-red-600 flex-row items-center"
+          onPress={deleteData}
+        >
+          <Ionicons name="trash-outline" size={18} color="white" />
+          <Text className="ml-1 text-white">Delete All Analytics</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Date Pickers */}
+      {showStartDatePicker && (
+        <DateTimePicker
+          value={startDate || new Date()}
+          mode="date"
+          display="default"
+          onChange={onStartDateChange}
+        />
+      )}
+      {showEndDatePicker && (
+        <DateTimePicker
+          value={endDate || new Date()}
+          mode="date"
+          display="default"
+          onChange={onEndDateChange}
+        />
+      )}
     </SafeAreaView>
   );
 };
 
-export default AnalyticsDashboard;
-
-export const styles = StyleSheet.create({
-  container: { alignItems: "center", justifyContent: "center", height: 1050 },
-  gauge: {
-    position: "absolute",
-    width: 150,
-    height: 150,
-    alignItems: "center",
-    justifyContent: "center",
-    display: "flex",
-    gap: 0,
+const styles = StyleSheet.create({
+  thumbnail: {
+    resizeMode: "contain",
   },
 });
+
+export default AnalyticsDashboard;

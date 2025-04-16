@@ -11,7 +11,10 @@ import { Platform } from 'expo-modules-core';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { useUser } from "../userContext";
+import { useTheme } from "../themeContext";
+import ThemeToggle from "@/components/ThemeToggle";
 import { AppState } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 
 const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');
@@ -55,6 +58,7 @@ const VideoList = () => {
   const router = useRouter();
   const db = useSQLiteContext();
   const { role, setRole } = useUser();
+  const { isDark } = useTheme();
   const [open, setOpen] = useState(false);
   const [language, setLanguage] = useState("en");
   const [items] = useState([
@@ -88,7 +92,6 @@ const VideoList = () => {
       if (nextAppState === "background") {
         const resetLanguages = Object.fromEntries(videoDetails.map((item) => [item.id, "en"]));
         const resetLevel = Object.fromEntries(videoDetails.map((item) => [item.id, "all"]));
-        // console.log("Resetting languages to default:", resetLevel);
         setVideoLanguages(resetLanguages);
         setLevel("all");
         await AsyncStorage.setItem("videoLanguages", JSON.stringify(resetLanguages));
@@ -170,8 +173,7 @@ const VideoList = () => {
   };
 
   return (
-    <View className="bg-purple-700 h-full flex-1">
-
+    <View className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-purple-700'}`}>
       <View className="flex flex-row justify-between px-4 py-6 items-center mt-10 gap-3">
         <Image source={gov_logo} className="w-[100px] h-[70px] flex-1"
           style={{ resizeMode: "contain" }} />
@@ -185,9 +187,17 @@ const VideoList = () => {
           }}
           setValue={handleLanguageChange}
           containerStyle={{ maxWidth: 100, paddingVertical: 0, paddingHorizontal: 0, flex: 1.6 }}
-          style={{ height: 40, minHeight: 30 }}
-          textStyle={{ fontSize: 11 }}
+          style={{ 
+            height: 40, 
+            minHeight: 30,
+            backgroundColor: isDark ? '#374151' : '#FFFFFF',
+          }}
+          textStyle={{ 
+            fontSize: 11,
+            color: isDark ? '#F9FAFB' : '#1F2937',
+          }}
           arrowIconStyle={{ marginHorizontal: -5 }}
+          theme={isDark ? "DARK" : "LIGHT"}
         />
         <DropDownPicker
           open={levelOpen}
@@ -199,15 +209,32 @@ const VideoList = () => {
           }}
           setValue={handleLevelChange}
           containerStyle={{ maxWidth: 100, paddingVertical: 0, flex: 2, paddingHorizontal: 0 }}
-          style={{ height: 40, minHeight: 30 }}
-          textStyle={{ fontSize: 11 }}
+          style={{ 
+            height: 40, 
+            minHeight: 30,
+            backgroundColor: isDark ? '#374151' : '#FFFFFF',
+          }}
+          textStyle={{ 
+            fontSize: 11,
+            color: isDark ? '#F9FAFB' : '#1F2937',
+          }}
           arrowIconStyle={{ marginHorizontal: -5 }}
+          theme={isDark ? "DARK" : "LIGHT"}
         />
-        <TouchableOpacity className="w-[100px] h-[70px] flex-1" onLongPress={() => router.push(`/login`)} delayLongPress={5000}>
-          <Image source={billion_readers} className="w-full h-full"
-            style={{ resizeMode: "contain" }}
-          />
-        </TouchableOpacity>
+        <View className="flex-row items-center flex-1 justify-between">
+          <TouchableOpacity
+            onPress={() => router.push('/settings')}
+            className={`p-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}
+          >
+            <Ionicons name="settings-outline" size={20} color={isDark ? "#A78BFA" : "#8B5CF6"} />
+          </TouchableOpacity>
+          <ThemeToggle />
+          <TouchableOpacity className="w-[75px] h-[70px]" onLongPress={() => router.push(`/login`)} delayLongPress={5000}>
+            <Image source={billion_readers} className="w-full h-full"
+              style={{ resizeMode: "contain" }}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
 
@@ -217,7 +244,7 @@ const VideoList = () => {
           data={videoDetails.filter(item => level === "all" || item.level === level)}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View className="flex flex-row items-cente justify-between p-2 border-b-[1px] border-gray-300 h-fit min-h-[130px]">
+            <View className={`flex flex-row items-center justify-between p-2 border-b-[1px] ${isDark ? 'border-gray-700' : 'border-gray-300'} h-fit min-h-[130px]`}>
               <TouchableOpacity
                 className="w-[45%]"
                 onPress={() => handleVideoPress(item)}
@@ -231,19 +258,19 @@ const VideoList = () => {
 
               {/* Video Details along with pdf and translation option */}
               <View className="flex w-[55%] pl-2 justify-between items-start h-[97px]">
-                <Text className="text-white text-left text-xl w-full font-bold break-words">
+                <Text className={`text-left text-xl w-full font-bold break-words ${isDark ? 'text-white' : 'text-white'}`}>
                   {videoLanguages[item.id] === "en" ? item.english_title : item.punjabi_title}
                 </Text>
                 <View className="flex gap-2 flex-row">
                   <TouchableOpacity
                     onPress={() => toggleVideoLanguage(item.id)}
-                    className="bg-white p-2.5 rounded-full">
-                    <Image className="w-6 h-6" source={translate_img} style={{ tintColor: 'black' }} />
+                    className={`p-2.5 rounded-full ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
+                    <Image className="w-6 h-6" source={translate_img} style={{ tintColor: isDark ? '#F9FAFB' : 'black' }} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={()=>handlePdfPress(item)}
-                    className="bg-white p-2.5 rounded-full">
-                    <Image className="w-6 h-6" source={pdf_img} style={{ tintColor: 'black' }} />
+                    className={`p-2.5 rounded-full ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
+                    <Image className="w-6 h-6" source={pdf_img} style={{ tintColor: isDark ? '#F9FAFB' : 'black' }} />
                   </TouchableOpacity>
                 </View>
               </View>
