@@ -1,22 +1,21 @@
 import { useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { StyleSheet, View, Text, TouchableOpacity, Image,TouchableWithoutFeedback } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, Image, TouchableWithoutFeedback } from "react-native";
 import { videoDetails } from "@/assets/details";
 import { useEffect, useState } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useRouter } from "expo-router";
 import { useKeepAwake } from 'expo-keep-awake';
 import { useSQLiteContext } from "expo-sqlite";
-import { getVideoAnalyticsByUser,getUsers } from "../database/database";
+import { getVideoAnalyticsByUser, getUsers } from "../database/database";
 import { getVideoUri } from "./videoDownlaoder";
 import { BackHandler } from "react-native"; // for handling back button press on android
-
-
-//Here back issue is solved but controls by default they are showing......
+import { useTheme } from "../themeContext";
 
 export default function VideoScreen() {
   useKeepAwake();
   const router = useRouter();
+  const { isDarkMode } = useTheme();
   const { id, language } = useLocalSearchParams<{ id?: string; language?: string }>();
   const [originalOrientation, setOriginalOrientation] = useState<ScreenOrientation.Orientation>();
   const back = require('@/assets/images/back.png');
@@ -45,21 +44,12 @@ export default function VideoScreen() {
 
     fetchVideoUri();
   }, []);
+  
   const handlePress = () => {
     setShowControls(true);
     setTimeout(() => setShowControls(false), 3000); // Hide controls after 3 seconds
   };
 
-  // useEffect(() => {
-  //   if (video) {
-  //     setVideoSource(language === "pa" ? video.url_punjabi : video.url_en);
-  //   }
-  // }, [video, language]);
-
-  
-  
-  
-  
   // Move player up here and modify
   const player = useVideoPlayer(
     videoSource || '',
@@ -85,29 +75,6 @@ export default function VideoScreen() {
     return () => backHandler.remove(); // Cleanup when unmounting
   }, [player, originalOrientation, router]); // Add dependencies
 
-  
-  // Remove the conditional return here
-  // if (!video || !fileUri) {
-    //   return (
-  //     <View>
-  //  
-
-  // const player = useVideoPlayer(
-  //   language === "pa" ? fileUri : fileUri,
-  //   async (player) => {
-  //     player.loop = false;
-
-  //     // Store the original orientation before changing
-  //     const currentOrientation = await ScreenOrientation.getOrientationAsync();
-  //     setOriginalOrientation(currentOrientation);
-
-  //     // Change to landscape mode automatically
-  //     await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-
-  //     await player.play();
-  //   }
-  // );
-
   // Restore original orientation when exiting
   useEffect(() => {
     return () => {
@@ -116,7 +83,6 @@ export default function VideoScreen() {
       }
     };
   }, [originalOrientation]);
-
 
   const updateVideoAnalytics = async (watchedTime: number) => {
     try {
@@ -128,7 +94,6 @@ export default function VideoScreen() {
       const today = new Date().toISOString().split("T")[0]; // Get YYYY-MM-DD format
       const lastWatchedTimestamp = new Date().toISOString(); // Get full timestamp
 
-  
       // Check if the analytics entry exists for this user, video, language, and date
       const existingRecords = await db.getAllAsync(
         "SELECT * FROM video_analytics WHERE user_id = ? AND video_id = ? AND language = ? AND date = ?",
@@ -160,7 +125,6 @@ export default function VideoScreen() {
     }
   };
   
-
   const returnBackToHome = async () => {
     const watchedTime = Math.floor(player.currentTime);
     console.log(`Watched Till: ${watchedTime} seconds`);
@@ -178,13 +142,12 @@ export default function VideoScreen() {
   };
   
   return (
-    <View style={styles.fullscreenContainer}>
-
+    <View style={[styles.fullscreenContainer, { backgroundColor: isDarkMode ? '#000000' : '#FFFFFF' }]}>
       <TouchableOpacity
-        className="absolute top-[43%] left-2 bg-white rounded-full p-2 z-10 shadow-lg shadow-black"
+        className={`absolute top-[43%] left-2 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-full p-2 z-10 shadow-lg shadow-black`}
         onPress={returnBackToHome}
       >
-        <Image className="w-8 h-8" source={back} />
+        <Image className="w-8 h-8" source={back} style={{ tintColor: isDarkMode ? '#F3F4F6' : undefined }} />
       </TouchableOpacity>
 
       <VideoView
@@ -199,19 +162,13 @@ export default function VideoScreen() {
 const styles = StyleSheet.create({
   fullscreenContainer: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "black",
-    // padding: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   video: {
-    width: "100%",
-    height: "110%",
-    resizeMode: "contain",
-  },
-  errorText: {
-    fontSize: 18,
-    color: "red",
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
 });
 

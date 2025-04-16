@@ -5,11 +5,13 @@ import * as FileSystem from 'expo-file-system';
 import { Asset } from 'expo-asset';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { videoDetails } from '../../assets/details';
+import { useTheme } from '../themeContext';
 
 const PdfViewer = () => {
   const [pdfUri, setPdfUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { isDarkMode } = useTheme();
   const { id, language } = useLocalSearchParams<{ id?: string; language?: string }>();
 
   const video = videoDetails.find((v) => v.id === id);
@@ -55,24 +57,24 @@ const PdfViewer = () => {
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f2f2f2' }}>
+    <View style={{ flex: 1, backgroundColor: isDarkMode ? '#121212' : '#f2f2f2' }}>
       {/* Header with Back Button and Title */}
-      <View className="flex-row items-center justify-start p-2 bg-white shadow-2xl pt-12 elevation-lg">
-  {/* <TouchableOpacity onPress={() => router.push("/")} className="p-2">
-    <Image 
-      source={back} 
-      className="w-6 h-6" 
-      resizeMode="contain" 
-    />
-  </TouchableOpacity> */}
-  <Text className="text-lg font-bold text-black ml-2">
-    {title || 'PDF Viewer'}
-  </Text>
-</View>
-
+      <View className={`flex-row items-center justify-start p-2 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-2xl pt-12 elevation-lg`}>
+        <TouchableOpacity onPress={() => router.push("/")} className="p-2">
+          <Image 
+            source={back} 
+            className="w-6 h-6" 
+            resizeMode="contain"
+            style={{ tintColor: isDarkMode ? '#F3F4F6' : undefined }}
+          />
+        </TouchableOpacity>
+        <Text className={`text-lg font-bold ${isDarkMode ? 'text-text-dark' : 'text-black'} ml-2`}>
+          {title || 'PDF Viewer'}
+        </Text>
+      </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="blue" style={{ flex: 1 }} />
+        <ActivityIndicator size="large" color={isDarkMode ? "#8B5CF6" : "blue"} style={{ flex: 1 }} />
       ) : pdfUri ? (
         <Pdf
           source={{ uri: pdfUri }}
