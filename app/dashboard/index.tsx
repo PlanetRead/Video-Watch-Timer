@@ -246,7 +246,7 @@ const AnalyticsDashboard = () => {
     }
 
     // Language Filter
-    if (selectedLanguage !== "All") {
+    if (selectedLanguage !== "All Lang") {
       result = result.filter(item =>
         item.language?.toString() === selectedLanguage.toString()
       );      
@@ -379,6 +379,11 @@ const AnalyticsDashboard = () => {
           </Text>
           <Text className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Total Watch Time</Text>
         </View>
+      </View>
+      
+      {/* SyncToCloud Component */}
+      <View className={`p-3 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-md mb-2`}>
+        <SyncToCloud />
       </View>
 
       {/* Search, Filter, and Sort Controls */}
