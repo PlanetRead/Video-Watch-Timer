@@ -73,12 +73,12 @@ const VideoList = () => {
       const savedLanguage = await AsyncStorage.getItem('languageDropdown');
       if (savedLanguage) {
         setLanguage(savedLanguage);
-        const newVideoLanguages: VideoLanguages = {};
-        videoDetails.forEach((item) => {
-          newVideoLanguages[item.id] = savedLanguage;
-        }
-        );
-        setVideoLanguages(newVideoLanguages);
+        // const newVideoLanguages: VideoLanguages = {};
+        // videoDetails.forEach((item) => {
+        //   newVideoLanguages[item.id] = savedLanguage;
+        // }
+        // );
+        // setVideoLanguages(newVideoLanguages);
       }
       const savedLanguages = await AsyncStorage.getItem('videoLanguages');
       if (savedLanguages) {

@@ -229,7 +229,7 @@ const AnalyticsDashboard = () => {
     }
 
     // Language Filter
-    if (selectedLanguage !== "All") {
+    if (selectedLanguage !== "All Lang") {
       result = result.filter(item =>
         item.language?.toString() === selectedLanguage.toString()
       );      
@@ -667,12 +667,14 @@ const AnalyticsDashboard = () => {
     <View className="bg-white rounded-xl w-4/5 p-4">
         <>
           <Text className="text-lg font-bold mb-2">Edit Username from {username} to:</Text>
+
           <TextInput
             className="border border-gray-300 rounded p-2 mb-4"
             placeholder="Enter new username"
             value={newUsername}
             onChangeText={setNewUsername}
           />
+          <Text className="text-lg font-bold mb-2">warning:</Text>
           <View className="flex-row justify-between">
             <TouchableOpacity
               className="bg-gray-300 px-4 py-2 rounded"
