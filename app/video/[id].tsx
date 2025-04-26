@@ -10,6 +10,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { getVideoAnalyticsByUser,getUsers } from "../database/database";
 import { getVideoUri } from "./videoDownlaoder";
 import { BackHandler } from "react-native"; // for handling back button press on android
+import { useFocusEffect } from "@react-navigation/native";
 
 
 //Here back issue is solved but controls by default they are showing......
@@ -34,7 +35,7 @@ export default function VideoScreen() {
   useEffect(() => {
     const fetchVideoUri = async () => {
       const uri = await getVideoUri(videoUri);
-      console.log("fileUri: ", uri);
+      // console.log("fileUri: ", uri);
       setFileUri(uri);
       
       // Add this condition
@@ -74,8 +75,9 @@ export default function VideoScreen() {
     }
   );
   
-  useEffect(() => {
+  useFocusEffect(() => {
     const backAction = () => {
+      console.log("Back button pressed");
       returnBackToHome(); // Call your function to track analytics & navigate
       return true; // Prevent default back behavior
     };
@@ -83,7 +85,7 @@ export default function VideoScreen() {
     const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
   
     return () => backHandler.remove(); // Cleanup when unmounting
-  }, [player, originalOrientation, router]); // Add dependencies
+  }); // Add dependencies
 
   
   // Remove the conditional return here
@@ -134,6 +136,8 @@ export default function VideoScreen() {
         "SELECT * FROM video_analytics WHERE user_id = ? AND video_id = ? AND language = ? AND date = ?",
         [userId, videoId, videoLang, today]
       );
+
+      console.log("Existing Records: ", existingRecords);
   
       if (existingRecords.length > 0) {
         // Update existing analytics entry
@@ -145,7 +149,7 @@ export default function VideoScreen() {
            WHERE user_id = ? AND video_id = ? AND language = ? AND date = ?`,
           [watchedTime, lastWatchedTimestamp, userId, videoId, videoLang, today]
         );
-        console.log(`Updated analytics for Video ${videoId}, Language: ${language}`);
+        console.log(`Updated analytics for Video ${videoId}, Language: ${language} from the videoscreen`);
       } else {
         // Insert a new entry
         await db.runAsync(
@@ -163,7 +167,7 @@ export default function VideoScreen() {
 
   const returnBackToHome = async () => {
     const watchedTime = Math.floor(player.currentTime);
-    console.log(`Watched Till: ${watchedTime} seconds`);
+    console.log(`Watched Till: ${watchedTime} seconds from the videoscreen`);
   
     await updateVideoAnalytics(watchedTime); // ⬅️ Call the function
   

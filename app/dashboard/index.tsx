@@ -83,21 +83,29 @@ const AnalyticsDashboard = () => {
   const [totalViews, setTotalViews] = useState(0);
 
   useEffect(() => {
-    let isMounted = true; // Track mounted state
-
+    let isMounted = true;
+  
     const fetchDetails = async () => {
       if (!userId) return;
+  
       try {
         const data: AnalyticsData[] = await getVideoAnalyticsByUser(db, userId);
-
+  
         if (isMounted) {
-          setTotalTime(
-            data.reduce((sum, item) => sum + (item.total_time_day || 0), 0)
+          // ✅ Always calculate fresh — don't add to previous state
+          const totalTime = data.reduce(
+            (sum, item) => sum + (item.total_time_day || 0),
+            0
           );
-          setTotalViews(
-            data.reduce((sum, item) => sum + (item.total_views_day || 0), 0)
+          const totalViews = data.reduce(
+            (sum, item) => sum + (item.total_views_day || 0),
+            0
           );
-
+  
+          setTotalTime(totalTime);
+          setTotalViews(totalViews);
+  
+          // 🔗 Merge with video details
           const mergedData = data.map((item) => {
             const videoDetail =
               videoDetails.find(
@@ -105,20 +113,22 @@ const AnalyticsDashboard = () => {
               ) || {};
             return { ...item, ...videoDetail };
           });
-
+  
           setAnalyticsData(mergedData);
+          // console.log("Analytics Data:", mergedData);
         }
       } catch (error) {
         console.error("Error fetching analytics:", error);
       }
     };
-
+  
     fetchDetails();
-
+  
     return () => {
-      isMounted = false; // Prevent state updates on unmounted component
+      isMounted = false;
     };
-  }, [db, userId]);
+  }, [db, userId]); // Added videoDetails just in case
+  
 
   const { height } = Dimensions.get("window");
 
