@@ -73,6 +73,7 @@ const VideoList = () => {
       const savedLanguage = await AsyncStorage.getItem('languageDropdown');
       if (savedLanguage) {
         setLanguage(savedLanguage);
+        console.log("this is working")
         // const newVideoLanguages: VideoLanguages = {};
         // videoDetails.forEach((item) => {
         //   newVideoLanguages[item.id] = savedLanguage;
@@ -158,6 +159,8 @@ const VideoList = () => {
       newVideoLanguages[item.id] = newValue;
     });
     setVideoLanguages(newVideoLanguages);
+    console.log("Updated video languages:", newVideoLanguages);
+    AsyncStorage.setItem('videoLanguages', JSON.stringify(newVideoLanguages)); // Save state
   };
 
   const handleLevelChange = (callback: (prevValue: string) => string) => {
