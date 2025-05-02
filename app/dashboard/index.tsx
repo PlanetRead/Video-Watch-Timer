@@ -83,6 +83,20 @@ const AnalyticsDashboard = () => {
   const [totalTime, setTotalTime] = useState(0);
   const [totalViews, setTotalViews] = useState(0);
 
+  const calculateData = (data: AnalyticsData[]) => {
+    const totalTime = data.reduce(
+      (sum, item) => sum + (item.total_time_day || 0),
+      0
+    );
+    const totalViews = data.reduce(
+      (sum, item) => sum + (item.total_views_day || 0),
+      0
+    );
+
+    setTotalTime(totalTime);
+    setTotalViews(totalViews);
+  }
+
   useEffect(() => {
     let isMounted = true;
   
@@ -94,17 +108,7 @@ const AnalyticsDashboard = () => {
   
         if (isMounted) {
           // ✅ Always calculate fresh — don't add to previous state
-          const totalTime = data.reduce(
-            (sum, item) => sum + (item.total_time_day || 0),
-            0
-          );
-          const totalViews = data.reduce(
-            (sum, item) => sum + (item.total_views_day || 0),
-            0
-          );
-  
-          setTotalTime(totalTime);
-          setTotalViews(totalViews);
+          calculateData(data);
   
           // 🔗 Merge with video details
           const mergedData = data.map((item) => {
@@ -285,9 +289,10 @@ const AnalyticsDashboard = () => {
       });
     }
 
-    setFilteredData(result);
-    console.log("Filtered Data:", result);
     sortDataByLastTimeStamp(result);
+    setFilteredData(result);
+    calculateData(result);
+    console.log("Filtered Data:", result);
   }, [searchQuery, analyticsData, selectedLevel, startDate, endDate, selectedLanguage]);
 
   const widthAndHeight = 150;
