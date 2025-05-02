@@ -61,7 +61,8 @@ const AnalyticsDashboard = () => {
    const [newUsername, setNewUsername] = useState("");
    const [editSuccess, setEditSuccess] = useState(false);
 
-
+   
+  
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -162,9 +163,17 @@ const AnalyticsDashboard = () => {
     { label: "Min Watched", value: "min_watch_time" },
   ]);
 
+  function sortDataByLastTimeStamp(filteredData: any[]) {
+    return filteredData.sort((a, b) => {
+      const dateA = new Date(a.last_time_stamp);
+      const dateB = new Date(b.last_time_stamp);
+      return dateB.getTime() - dateA.getTime(); // Sort in descending order
+    });
+  }
+
   useEffect(() => {
     if (!sortoption) return;
-
+    sortDataByLastTimeStamp(filteredData);
     let sortedData = [...filteredData];
 
     switch (sortoption) {
@@ -185,6 +194,7 @@ const AnalyticsDashboard = () => {
     }
 
     setFilteredData(sortedData);
+    console.log("Sorted Data:", sortedData);
   }, [sortoption]);
 
   useEffect(() => {
@@ -248,7 +258,8 @@ const AnalyticsDashboard = () => {
     // Date Range Filter
     if (startDate || endDate) {
       result = result.filter((item) => {
-        const itemDate = new Date(item.date);
+        const itemDate = new Date(item.date); // what does it return? 
+        
         
         // Check if date is valid
         if (isNaN(itemDate.getTime())) {
@@ -275,6 +286,8 @@ const AnalyticsDashboard = () => {
     }
 
     setFilteredData(result);
+    console.log("Filtered Data:", result);
+    sortDataByLastTimeStamp(result);
   }, [searchQuery, analyticsData, selectedLevel, startDate, endDate, selectedLanguage]);
 
   const widthAndHeight = 150;
@@ -684,7 +697,8 @@ const AnalyticsDashboard = () => {
             value={newUsername}
             onChangeText={setNewUsername}
           />
-          <Text className="text-lg font-bold mb-2">warning:</Text>
+          <Text className="text-lg font-bold mb-2 text-red-600">Warning:</Text>
+          <Text className="text-red-600 mb-4">Editing your username will delete all the existing data!</Text>
           <View className="flex-row justify-between">
             <TouchableOpacity
               className="bg-gray-300 px-4 py-2 rounded"

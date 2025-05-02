@@ -184,13 +184,6 @@ export default function VideoScreen() {
   return (
     <View style={styles.fullscreenContainer}>
 
-      <TouchableOpacity
-        className="absolute top-[43%] left-2 bg-white rounded-full p-2 z-10 shadow-lg shadow-black"
-        onPress={returnBackToHome}
-      >
-        <Image className="w-8 h-8" source={back} />
-      </TouchableOpacity>
-
       <VideoView
         style={styles.video}
         player={player}
