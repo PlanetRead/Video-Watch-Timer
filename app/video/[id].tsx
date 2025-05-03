@@ -24,7 +24,10 @@ export default function VideoScreen() {
   const video = videoDetails.find((v) => v.id === id);
   const db = useSQLiteContext();
   const [fileUri, setFileUri] = useState<string | null>(null);
-  const [showControls, setShowControls] = useState(false);
+  // const [showControls, setShowControls] = useState(false);
+  const [watchTime,setWatchTime] = useState<number|null>(null);
+  const [totalWatchTime,setTotalWatchTime] = useState<number>(0);
+
   
   // Add this new state
   const [videoSource, setVideoSource] = useState<string | null>(null);
@@ -46,20 +49,7 @@ export default function VideoScreen() {
 
     fetchVideoUri();
   }, []);
-  const handlePress = () => {
-    setShowControls(true);
-    setTimeout(() => setShowControls(false), 3000); // Hide controls after 3 seconds
-  };
 
-  // useEffect(() => {
-  //   if (video) {
-  //     setVideoSource(language === "pa" ? video.url_punjabi : video.url_en);
-  //   }
-  // }, [video, language]);
-
-  
-  
-  
   
   // Move player up here and modify
   const player = useVideoPlayer(
@@ -74,10 +64,33 @@ export default function VideoScreen() {
       await player.play();
     }
   );
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (player?.playing && watchTime === null) {
+        setWatchTime(Date.now()); // video started playing after a pause/ from the beginning
+        // console.log("Video started playing");
+        // console.log("Watch Time: ", watchTime);
+      }
+  
+      if (!player?.playing && watchTime !== null) {
+        const now = Date.now();
+        // console.log("now",now);
+        // console.log("watchTime",watchTime) //video paused stop the clock and calc till now
+        const elapsedTime = Math.floor((now - watchTime) / 1000); // in seconds
+        // console.log("Elapsed Time: ", elapsedTime);
+        setTotalWatchTime(prev => prev + (elapsedTime));
+        setWatchTime(null); // reset the watch time
+        // console.log("Total Watch Time: ", totalWatchTime);
+      }
+    }, 1000); // check every second
+  
+    return () => clearInterval(interval);
+  }, [player, watchTime]);
   
   useFocusEffect(() => {
     const backAction = () => {
-      console.log("Back button pressed");
+      // console.log("Back button pressed");
       returnBackToHome(); // Call your function to track analytics & navigate
       return true; // Prevent default back behavior
     };
@@ -87,28 +100,6 @@ export default function VideoScreen() {
     return () => backHandler.remove(); // Cleanup when unmounting
   }); // Add dependencies
 
-  
-  // Remove the conditional return here
-  // if (!video || !fileUri) {
-    //   return (
-  //     <View>
-  //  
-
-  // const player = useVideoPlayer(
-  //   language === "pa" ? fileUri : fileUri,
-  //   async (player) => {
-  //     player.loop = false;
-
-  //     // Store the original orientation before changing
-  //     const currentOrientation = await ScreenOrientation.getOrientationAsync();
-  //     setOriginalOrientation(currentOrientation);
-
-  //     // Change to landscape mode automatically
-  //     await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-
-  //     await player.play();
-  //   }
-  // );
 
   // Restore original orientation when exiting
   useEffect(() => {
@@ -137,7 +128,7 @@ export default function VideoScreen() {
         [userId, videoId, videoLang, today]
       );
 
-      console.log("Existing Records: ", existingRecords);
+      // console.log("Existing Records: ", existingRecords);
   
       if (existingRecords.length > 0) {
         // Update existing analytics entry
@@ -149,7 +140,7 @@ export default function VideoScreen() {
            WHERE user_id = ? AND video_id = ? AND language = ? AND date = ?`,
           [watchedTime, lastWatchedTimestamp, userId, videoId, videoLang, today]
         );
-        console.log(`Updated analytics for Video ${videoId}, Language: ${language} from the videoscreen`);
+        // console.log(`Updated analytics for Video ${videoId}, Language: ${language} from the videoscreen`);
       } else {
         // Insert a new entry
         await db.runAsync(
@@ -157,7 +148,7 @@ export default function VideoScreen() {
            VALUES (?, ?, ?, 1, ?, ?, ?)`,
           [userId, videoId, today, watchedTime, lastWatchedTimestamp, videoLang]
         );
-        console.log(`Inserted new analytics for Video ${videoId}, Language: ${language}`);
+        // console.log(`Inserted new analytics for Video ${videoId}, Language: ${language}`);
       }
     } catch (error) {
       console.error("Error updating video analytics:", error);
@@ -166,10 +157,11 @@ export default function VideoScreen() {
   
 
   const returnBackToHome = async () => {
-    const watchedTime = Math.floor(player.currentTime);
-    console.log(`Watched Till: ${watchedTime} seconds from the videoscreen`);
-  
-    await updateVideoAnalytics(watchedTime); // ⬅️ Call the function
+    // const watchedTime = Math.floor(player.currentTime);
+    // console.log(`Total Watch Time: ${totalWatchTime} seconds`);
+    // console.log(`Watched Till: ${watchedTime} seconds from the videoscreen`);
+    // console.log(`Total Watch Time: ${totalWatchTime} seconds`);
+    await updateVideoAnalytics(totalWatchTime); // ⬅️ Call the function
   
     if (player) {
       player.pause();

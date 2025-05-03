@@ -675,7 +675,7 @@ const AnalyticsDashboard = () => {
                       {item.language === "en" ? "English" : "Punjabi"}
                     </Text>
                     <Text className="text-sm font-bold text-purple-700">
-                      Last Watched: {item.date}
+                      Last Watched: {item.date.split("-").reverse().join("-")}
                     </Text>
                   </View>
                 </View>
