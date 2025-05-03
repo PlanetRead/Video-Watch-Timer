@@ -261,6 +261,16 @@ const AnalyticsDashboard = () => {
 
     // Date Range Filter
     if (startDate || endDate) {
+
+      // Normalize start and end dates
+      if (startDate) {
+        startDate.setHours(0, 0, 0, 0); // Start of day
+      }
+
+      if (endDate) {
+        endDate.setHours(23, 59, 59, 999); // End of day
+      }
+
       result = result.filter((item) => {
         const itemDate = new Date(item.date); // what does it return? 
         
