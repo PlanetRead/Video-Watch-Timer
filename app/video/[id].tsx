@@ -1,19 +1,16 @@
 import { useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { StyleSheet, View, Text, TouchableOpacity, Image,TouchableWithoutFeedback } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, Image, TouchableWithoutFeedback } from "react-native";
 import { videoDetails } from "@/assets/details";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useRouter } from "expo-router";
 import { useKeepAwake } from 'expo-keep-awake';
 import { useSQLiteContext } from "expo-sqlite";
-import { getVideoAnalyticsByUser,getUsers } from "../database/database";
+import { getVideoAnalyticsByUser, getUsers } from "../database/database";
 import { getVideoUri } from "./videoDownlaoder";
 import { BackHandler } from "react-native"; // for handling back button press on android
 import { useFocusEffect } from "@react-navigation/native";
-
-
-//Here back issue is solved but controls by default they are showing......
 
 export default function VideoScreen() {
   useKeepAwake();
@@ -24,24 +21,20 @@ export default function VideoScreen() {
   const video = videoDetails.find((v) => v.id === id);
   const db = useSQLiteContext();
   const [fileUri, setFileUri] = useState<string | null>(null);
-  // const [showControls, setShowControls] = useState(false);
-  const [watchTime,setWatchTime] = useState<number|null>(null);
-  const [totalWatchTime,setTotalWatchTime] = useState<number>(0);
-
   
-  // Add this new state
+  // References to track watch time that won't be affected by React's asynchronous updates
+  const watchStartTimeRef = useRef<number | null>(null);
+  const totalWatchTimeRef = useRef<number>(0);
   const [videoSource, setVideoSource] = useState<string | null>(null);
+  
   // video_id_language -> video_3_en
   const videoUri = `${video?.id}_${language == "pa" ? "pa" : "en"}`;
-  // const videoUri = "video_1";
 
   useEffect(() => {
     const fetchVideoUri = async () => {
       const uri = await getVideoUri(videoUri);
-      // console.log("fileUri: ", uri);
       setFileUri(uri);
       
-      // Add this condition
       if (uri && video) {
         setVideoSource(uri);
       }
@@ -50,12 +43,10 @@ export default function VideoScreen() {
     fetchVideoUri();
   }, []);
 
-  
-  // Move player up here and modify
   const player = useVideoPlayer(
     videoSource || '',
     async (player) => {
-      if (!videoSource) return; // Add this check
+      if (!videoSource) return;
       
       player.loop = false;
       const currentOrientation = await ScreenOrientation.getOrientationAsync();
@@ -65,41 +56,34 @@ export default function VideoScreen() {
     }
   );
 
+  // More reliable way to track watch time using refs
   useEffect(() => {
     const interval = setInterval(() => {
-      if (player?.playing && watchTime === null) {
-        setWatchTime(Date.now()); // video started playing after a pause/ from the beginning
-        // console.log("Video started playing");
-        // console.log("Watch Time: ", watchTime);
+      if (player?.playing && watchStartTimeRef.current === null) {
+        watchStartTimeRef.current = Date.now(); // Start tracking when video plays
       }
   
-      if (!player?.playing && watchTime !== null) {
-        const now = Date.now();
-        // console.log("now",now);
-        // console.log("watchTime",watchTime) //video paused stop the clock and calc till now
-        const elapsedTime = Math.floor((now - watchTime) / 1000); // in seconds
-        // console.log("Elapsed Time: ", elapsedTime);
-        setTotalWatchTime(prev => prev + (elapsedTime));
-        setWatchTime(null); // reset the watch time
-        // console.log("Total Watch Time: ", totalWatchTime);
+      if (!player?.playing && watchStartTimeRef.current !== null) {
+        // Calculate time watched during this play segment
+        const elapsedTime = Math.ceil((Date.now() - watchStartTimeRef.current) / 1000); // Convert to seconds
+        // Add to total watch time using the ref (not state)
+        totalWatchTimeRef.current += elapsedTime;
+        watchStartTimeRef.current = null; // Reset for next play segment
       }
-    }, 1000); // check every second
+    }, 1000); // Check every second
   
     return () => clearInterval(interval);
-  }, [player, watchTime]);
+  }, [player]);
   
   useFocusEffect(() => {
     const backAction = () => {
-      // console.log("Back button pressed");
-      returnBackToHome(); // Call your function to track analytics & navigate
+      returnBackToHome();
       return true; // Prevent default back behavior
     };
   
     const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
-  
     return () => backHandler.remove(); // Cleanup when unmounting
-  }); // Add dependencies
-
+  });
 
   // Restore original orientation when exiting
   useEffect(() => {
@@ -109,7 +93,6 @@ export default function VideoScreen() {
       }
     };
   }, [originalOrientation]);
-
 
   const updateVideoAnalytics = async (watchedTime: number) => {
     try {
@@ -121,6 +104,7 @@ export default function VideoScreen() {
       const today = new Date().toISOString().split("T")[0]; // Get YYYY-MM-DD format
       const lastWatchedTimestamp = new Date().toISOString(); // Get full timestamp
 
+      console.log(`Updating analytics with: userId=${userId}, videoId=${videoId}, language=${videoLang}, watchedTime=${watchedTime}s`);
   
       // Check if the analytics entry exists for this user, video, language, and date
       const existingRecords = await db.getAllAsync(
@@ -128,8 +112,6 @@ export default function VideoScreen() {
         [userId, videoId, videoLang, today]
       );
 
-      // console.log("Existing Records: ", existingRecords);
-  
       if (existingRecords.length > 0) {
         // Update existing analytics entry
         await db.runAsync(
@@ -140,7 +122,7 @@ export default function VideoScreen() {
            WHERE user_id = ? AND video_id = ? AND language = ? AND date = ?`,
           [watchedTime, lastWatchedTimestamp, userId, videoId, videoLang, today]
         );
-        // console.log(`Updated analytics for Video ${videoId}, Language: ${language} from the videoscreen`);
+        console.log(`Updated analytics for Video ${videoId}, Language: ${videoLang} with ${watchedTime}ms`);
       } else {
         // Insert a new entry
         await db.runAsync(
@@ -148,20 +130,28 @@ export default function VideoScreen() {
            VALUES (?, ?, ?, 1, ?, ?, ?)`,
           [userId, videoId, today, watchedTime, lastWatchedTimestamp, videoLang]
         );
-        // console.log(`Inserted new analytics for Video ${videoId}, Language: ${language}`);
+        console.log(`Inserted new analytics for Video ${videoId}, Language: ${videoLang} with ${watchedTime}ms`);
       }
     } catch (error) {
       console.error("Error updating video analytics:", error);
     }
   };
   
-
   const returnBackToHome = async () => {
-    // const watchedTime = Math.floor(player.currentTime);
-    // console.log(`Total Watch Time: ${totalWatchTime} seconds`);
-    // console.log(`Watched Till: ${watchedTime} seconds from the videoscreen`);
-    // console.log(`Total Watch Time: ${totalWatchTime} seconds`);
-    await updateVideoAnalytics(totalWatchTime); // ⬅️ Call the function
+    // Calculate final watch time including current playing segment if video is still playing
+    let finalWatchTime = totalWatchTimeRef.current;
+    
+    if (player?.playing && watchStartTimeRef.current !== null) {
+      // Add the current play segment if video is still playing
+      finalWatchTime += (Math.ceil((Date.now() - watchStartTimeRef.current)/1000));
+    }
+    
+    console.log(`Total Watch Time: ${finalWatchTime} seconds`);
+    
+    // Only update analytics if there's actual watch time
+    if (finalWatchTime > 0) {
+      await updateVideoAnalytics(finalWatchTime);
+    }
   
     if (player) {
       player.pause();
@@ -170,12 +160,12 @@ export default function VideoScreen() {
     if (originalOrientation) {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.DEFAULT);
     }
+    
     router.push(`/`);
   };
   
   return (
     <View style={styles.fullscreenContainer}>
-
       <TouchableOpacity
         className="absolute top-[43%] left-2 bg-white rounded-full p-2 z-10 shadow-lg shadow-black"
         onPress={returnBackToHome}
@@ -198,7 +188,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "black",
-    // padding: 40,
   },
   video: {
     width: "100%",
@@ -210,4 +199,3 @@ const styles = StyleSheet.create({
     color: "red",
   },
 });
-
