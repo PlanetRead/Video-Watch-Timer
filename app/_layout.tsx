@@ -131,7 +131,7 @@ export default function RootLayout() {
     { id: '27_hi', url: 'https://storage.googleapis.com/bird-planet-read/Videos/Hindi/Pishi_Caught_in_a_Storm_Hindi.mp4' },
     
     // Video 28 - Punyakoti, the Cow
-    { id: '28_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/Punyakoti,_the_Cow_English.mp4' },
+    { id: '28_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/Punyakoti_the_Cow_English.mp4' },
     { id: '28_hi', url: 'https://storage.googleapis.com/bird-planet-read/Videos/Hindi/Punyakoti,_the_Cow_Hindi.mp4' },
     
     // Video 29 - Rain Rain
@@ -199,7 +199,7 @@ export default function RootLayout() {
     { id: '44_hi', url: 'https://storage.googleapis.com/bird-planet-read/Videos/Hindi/Timmy_and_Pepe_Hindi.mp4' },
     
     // Video 45 - Too Big! Too Small!
-    { id: '45_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/Too_Big!_Too_Small!_English.mp4' },
+    { id: '45_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/Too_Big_Too_Small_English.mp4' },
     { id: '45_hi', url: 'https://storage.googleapis.com/bird-planet-read/Videos/Hindi/Too_Big!_Too_Small!_Hindi.mp4' },
     
     // Video 46 - Too Many Bananas
