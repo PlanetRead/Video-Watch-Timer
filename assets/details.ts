@@ -567,7 +567,7 @@ export const videoDetails = [
         //url_punjabi: require('@/assets/videos/punjabi/Timmy_and_Pepe_Punjabi.mp4'),
         pdf_en: Asset.fromModule(require('@/assets/pdfs/english/Timmy_and_Pepe_English.pdf')),
         pdf_hindi: Asset.fromModule(require('@/assets/pdfs/hindi/Timmy_and_Pepe_Hindi.pdf')),
-        thuzmbnail_en: require('@/assets/thumbnails/english/Timmy_and_Pepe_English.png'),
+        thumbnail_en: require('@/assets/thumbnails/english/Timmy_and_Pepe_English.png'),
         thumbnail_hindi: require('@/assets/thumbnails/hindi/Timmy_and_Pepe_Hindi.png'),
         description: "This is Timmy and Pepe ",
         level: "1"
