@@ -161,7 +161,7 @@ export default function VideoScreen() {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.DEFAULT);
     }
     
-    router.navigate(`/`);
+    router.back();
   };
   
   return (
