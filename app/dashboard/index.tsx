@@ -36,11 +36,13 @@ type AnalyticsData = {
   date: string;
   last_time_stamp: number | null;
   user_id?: string;
-
+  pdf_en?: string;
+  pdf_hindi?: string;
+  description?: string;
   english_title?: string;
   punjabi_title?: string;
   thumbnail_en?: any;
-  thumbnail_punjabi?: any;
+  thumbnail_hindi?: any;
   level?: string;
 };
 
@@ -154,7 +156,7 @@ const AnalyticsDashboard = () => {
     const [languageItems] = useState([
       { label: "All Lang", value: "All Lang" },
       { label: "English", value: "en" },
-      { label: "Punjabi", value: "pa" },
+      { label: "Hindi", value: "hi" },
     ]);
 
   // Sort Dropdown State
@@ -319,7 +321,8 @@ const AnalyticsDashboard = () => {
     alert("Exporting data to CSV");
 
     // Convert JSON data to CSV
-    const csvContent = Papa.unparse(analyticsData);
+    const csvData = filteredData.map(({pdf_en, pdf_hindi, thumbnail_en, thumbnail_hindi, description, ...rest}) => ({ ...rest,username}));
+    const csvContent = Papa.unparse(csvData);
 
     // Define file path
     const fileUri = `${FileSystem.documentDirectory}analytics.csv`;
@@ -365,9 +368,14 @@ const AnalyticsDashboard = () => {
       className="bg-white p-4"
     >
       <View className="flex-1">
-        <Text className="text-black text-2xl font-black text-center mb-4">
+        {/* <View className="flex "> */}
+        <Text className="text-black text-2xl font-black text-center">
           Analytics
         </Text>
+        <Text className="text-gray-400 text-md font-black text-center">
+          {userId}
+        </Text>
+        {/* </View> */}
 
         <View className="flex flex-row gap-4 justify-around">
           <View>
@@ -653,7 +661,7 @@ const AnalyticsDashboard = () => {
                   source={
                     item.language === "en"
                       ? item.thumbnail_en
-                      : item.thumbnail_punjabi
+                      : item.thumbnail_hindi
                   }
                   style={{ height: 100, width: "50%" }}
                   resizeMode="contain"
@@ -682,7 +690,7 @@ const AnalyticsDashboard = () => {
 
                     <Text className="text-sm font-bold text-purple-700">
                       Watched in:{" "}
-                      {item.language === "en" ? "English" : "Punjabi"}
+                      {item.language === "en" ? "English" : "Hindi"}
                     </Text>
                     <Text className="text-sm font-bold text-purple-700">
                       Last Watched: {item.date.split("-").reverse().join("-")}

@@ -13,8 +13,8 @@ const PdfViewer = () => {
   const { id, language } = useLocalSearchParams<{ id?: string; language?: string }>();
 
   const video = videoDetails.find((v) => v.id === id);
-  const pdf = video ? (language === "pa" ? video.pdf_punjabi : video.pdf_en) : null;
-  const title = video ? (language === "pa" ? video.punjabi_title : video.english_title) : 'PDF Viewer';
+  const pdf = video ? (language === "hi" ? video.pdf_hindi : video.pdf_en) : null;
+  const title = video ? (language === "hi" ? video.punjabi_title : video.english_title) : 'PDF Viewer';
   const back = require('@/assets/images/back.png');
 
   useEffect(() => {

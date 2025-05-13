@@ -28,7 +28,7 @@ export default function VideoScreen() {
   const [videoSource, setVideoSource] = useState<string | null>(null);
   
   // video_id_language -> video_3_en
-  const videoUri = `${video?.id}_${language == "pa" ? "pa" : "en"}`;
+  const videoUri = `${video?.id}_${language == "hi" ? "hi" : "en"}`;
 
   useEffect(() => {
     const fetchVideoUri = async () => {
@@ -161,7 +161,7 @@ export default function VideoScreen() {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.DEFAULT);
     }
     
-    router.push(`/`);
+    router.navigate(`/`);
   };
   
   return (

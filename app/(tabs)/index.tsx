@@ -24,7 +24,7 @@ interface VideoItem {
   english_title: string;
   punjabi_title: string;
   thumbnail_en: any;
-  thumbnail_punjabi: any;
+  thumbnail_hindi: any;
   level: string;
 }
 
@@ -60,7 +60,7 @@ const VideoList = () => {
   const [loading, setLoading] = useState(true);
   const [items] = useState([
     { label: "English", value: "en" },
-    { label: "Punjabi", value: "pa" },
+    { label: "Hindi", value: "hi" },
   ]);
 
   const [videoLanguages, setVideoLanguages] = useState(
@@ -172,7 +172,7 @@ const VideoList = () => {
 
   const toggleVideoLanguage = (videoId: string) => {
     setVideoLanguages((prev) => {
-      const updated = { ...prev, [videoId]: prev[videoId] === "en" ? "pa" : "en" };
+      const updated = { ...prev, [videoId]: prev[videoId] === "en" ? "hi" : "en" };
       AsyncStorage.setItem('videoLanguages', JSON.stringify(updated)); // Save state
       return updated;
     });
@@ -222,7 +222,7 @@ const VideoList = () => {
           textStyle={{ fontSize: 11 }}
           arrowIconStyle={{ marginHorizontal: -5 }}
         />
-        <TouchableOpacity className="w-[100px] h-[70px] flex-1" onLongPress={() => router.push(`/login`)} delayLongPress={5000}>
+        <TouchableOpacity className="w-[100px] h-[70px] flex-1" onLongPress={() => router.navigate(`/login`)} delayLongPress={5000}>
           <Image source={billion_readers} className="w-full h-full"
             style={{ resizeMode: "contain" }}
           />
@@ -256,7 +256,7 @@ const VideoList = () => {
                 onPress={() => handleVideoPress(item)}
               >
                 <Image
-                  source={videoLanguages[item.id] === "en" ? item.thumbnail_en : item.thumbnail_punjabi}
+                  source={videoLanguages[item.id] === "en" ? item.thumbnail_en : item.thumbnail_hindi}
                   className="h-[100px] w-full"
                   style={styles.thumbnail}
                 />
