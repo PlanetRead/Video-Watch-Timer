@@ -62,7 +62,7 @@ const AnalyticsDashboard = () => {
    const [editModalVisible, setEditModalVisible] = useState(false);
    const [newUsername, setNewUsername] = useState("");
    const [editSuccess, setEditSuccess] = useState(false);
-
+   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
    
   
 
@@ -351,6 +351,7 @@ const AnalyticsDashboard = () => {
       setAnalyticsData([]); // Clear the local state
       setTotalTime(0);
       setTotalViews(0);
+      setDeleteModalVisible(false)
     } catch (error) {
       console.error("Error deleting user data:", error);
     }
@@ -432,7 +433,7 @@ const AnalyticsDashboard = () => {
         <View className="flex-1">
         <TouchableOpacity 
           className="bg-[#ECE6F0] p-3 w-full" 
-          onPress={deleteData}
+          onPress={() => setDeleteModalVisible(true)}
         >
           <Text className="text-red-500 text-center font-bold">DELETE USER DATA</Text>
         </TouchableOpacity>
@@ -756,6 +757,34 @@ const AnalyticsDashboard = () => {
   </View>
 </Modal>
 
+<Modal
+  animationType="slide"
+  transparent={true}
+  visible={deleteModalVisible}
+  onRequestClose={() => setDeleteModalVisible(false)}
+>
+  <View className="flex-1 justify-center items-center bg-black/50">
+    <View className="bg-white rounded-xl w-4/5 p-4">
+        <>
+          <Text className="text-lg font-bold mb-2">Warning: This will permanently remove the data. Do you wish to continue?</Text>
+    <View className="flex-row justify-between">
+            <TouchableOpacity
+              className="bg-gray-300 px-4 py-2 rounded"
+              onPress={() => setDeleteModalVisible(false)}
+            >
+              <Text>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-purple-700 px-4 py-2 rounded"
+              onPress={deleteData}
+            >
+              <Text className="text-white">Continue</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+    </View>
+  </View>
+</Modal>
 
     </SafeAreaView>
   );
