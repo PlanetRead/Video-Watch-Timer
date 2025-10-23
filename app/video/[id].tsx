@@ -2,7 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { StyleSheet, View, Text, TouchableOpacity, Image, TouchableWithoutFeedback } from "react-native";
 import { videoDetails } from "@/assets/details";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react"; // --- FIX: Import 'useRef' ---
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useRouter } from "expo-router";
 import { useKeepAwake } from 'expo-keep-awake';
@@ -22,6 +22,9 @@ export default function VideoScreen() {
   const video = videoDetails.find((v) => v.id === id);
   const db = useSQLiteContext();
   const [fileUri, setFileUri] = useState<string | null>(null);
+
+  // --- FIX: Create a ref to track if the component is mounted ---
+  const isMountedRef = useRef(true);
   
   // References to track watch time that won't be affected by React's asynchronous updates
   const watchStartTimeRef = useRef<number | null>(null);
@@ -33,8 +36,21 @@ export default function VideoScreen() {
   const videoUri = `${video?.id}_${language == "pa" ? "pa" : "en"}`;
 
   useEffect(() => {
+    // --- FIX: Set the ref to false when the component unmounts ---
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     const fetchVideoUri = async () => {
       const uri = await getVideoUri(videoUri);
+      
+      // --- FIX: Add a "guard" to check if component is still mounted ---
+      if (!isMountedRef.current) {
+        return; // Stop execution if component unmounted
+      }
+
       setFileUri(uri);
       
       if (uri && video) {
@@ -52,6 +68,12 @@ export default function VideoScreen() {
       
       player.loop = false;
       const currentOrientation = await ScreenOrientation.getOrientationAsync();
+      
+      // --- FIX: Add a "guard" to check if component is still mounted ---
+      if (!isMountedRef.current) {
+        return; // Stop execution if component unmounted
+      }
+
       setOriginalOrientation(currentOrientation);
       await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
       
@@ -183,6 +205,9 @@ export default function VideoScreen() {
   };
   
   const returnBackToHome = async () => {
+    // --- FIX: We must set the isMountedRef to false *before* navigating away ---
+    isMountedRef.current = false;
+
     // Calculate final watch time including current playing segment if video is still playing
     let finalWatchTime = totalWatchTimeRef.current;
     
