@@ -157,7 +157,10 @@ const SyncToCloud = () => {
         pin: user.pin,
       }));
 
-      const { error: usersError } = await supabase.from("user").upsert(userUpsertData);
+      // ----------------- THIS IS THE FIX -----------------
+      const { error: usersError } = await supabase.from("users").upsert(userUpsertData);
+      // ---------------------------------------------------
+
       if (usersError) {
         return { success: false, error: `Error syncing users: ${usersError.message}` };
       }
