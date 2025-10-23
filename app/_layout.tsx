@@ -3,25 +3,25 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState, Suspense } from 'react'; // Import Suspense
 import 'react-native-reanimated';
-import '../global.css';
+import '../global.css'; // Make sure this path is correct relative to app/_layout.tsx
 import { View, Modal, Text } from 'react-native';
 import { Asset } from 'expo-asset';
 import Animated, { Easing, useSharedValue, useAnimatedStyle, withTiming, withRepeat } from 'react-native-reanimated';
 import * as SplashScreen from 'expo-splash-screen';
-// Make sure to import from 'expo-sqlite/next' for the new API
+// Import from 'expo-sqlite' (not /next)
 import { SQLiteProvider } from 'expo-sqlite';
-import { initializeDatabase } from './database/database';
-import { UserProvider } from './userContext';
-import { downloadVideo, clearDownloadedVideos } from "./video/videoDownlaoder";
+import { initializeDatabase } from './database/database'; // Make sure this path is correct
+import { UserProvider } from './userContext'; // Make sure this path is correct
+import { downloadVideo, clearDownloadedVideos } from "./video/videoDownlaoder"; // Make sure this path is correct
 import { ProgressBar } from 'react-native-paper';
-import SyncToCloud from '@/components/SyncToCloud';
+import SyncToCloud from '@/components/SyncToCloud'; // Make sure this path is correct
 
 // Prevent auto-hide at the start
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const VIDEO_LIST = [
-    // ... (Your VIDEO_LIST remains the same)
+    // This list determines which videos are downloaded on startup
     { id: '1_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/A_Cloud_of_Trash_English.mp4' },
     { id: '1_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/A_Cloud_of_Trash_Punjabi.mp4' },
     { id: '2_en', url: 'https://storage.googleapis.com/bird-planet-read/Videos/English/A_Street,_or_a_Zoo_English.mp4' },
@@ -48,98 +48,118 @@ export default function RootLayout() {
     { id: '12_pa', url: 'https://storage.googleapis.com/bird-planet-read/Videos/punjabi/Too_Big!_Too_Small!_Punjabi.mp4' }
   ];
 
-  const [isLoading, setIsLoading] = useState(true);
-  const scale = useSharedValue(0.5);
-  const opacity = useSharedValue(0);
-  const splash_img = require("@/assets/images/splash_img.png");
-  const [downloadProgress, setDownloadProgress] = useState(0);
-  const [videoAssetsLoaded, setVideoAssetsLoaded] = useState(false);
-  const glowOpacity = useSharedValue(0.3); // No changes needed for state or animations
+  const [isLoading, setIsLoading] = useState(true); // Tracks if initial assets (like splash image) are loaded
+  const scale = useSharedValue(0.5); // For splash animation
+  const opacity = useSharedValue(0); // For splash animation
+  const splash_img = require("@/assets/images/splash_img.png"); // Make sure path is correct
+  const [downloadProgress, setDownloadProgress] = useState(0); // Tracks video download progress
+  const [videoAssetsLoaded, setVideoAssetsLoaded] = useState(false); // Tracks if all videos are downloaded
+  const glowOpacity = useSharedValue(0.3); // For splash animation glow
 
-  // ... (Your useEffect hooks for animations and asset preloading remain the same) ...
+  // --- Animation and Asset Preloading Effects ---
   useEffect(() => {
-    glowOpacity.value = withRepeat(withTiming(1, { duration: 1000 }), -1, true); // Repeats the glow effect
+    // Animate glow effect for splash screen
+    glowOpacity.value = withRepeat(withTiming(1, { duration: 1000 }), -1, true);
   }, []);
 
   const animatedGlow = useAnimatedStyle(() => ({
+    // Style for the splash screen glow (applied below if needed)
     shadowOpacity: glowOpacity.value,
     shadowRadius: 10,
-    shadowColor: "#6B21A8",
+    shadowColor: "#6B21A8", // Purple glow color
   }));
 
   useEffect(() => {
+    // Preload splash image and manage splash screen visibility duration
     async function preloadAssets() {
       try {
-        await Asset.loadAsync([splash_img]); // Preload the image
+        await Asset.loadAsync([splash_img]);
+        // Animate splash image appearing
         scale.value = withTiming(1, { duration: 1200, easing: Easing.out(Easing.exp) });
         opacity.value = withTiming(1, { duration: 1200 });
 
-        // Set a minimum display time for the splash screen (e.g., 3000ms = 3 seconds)
-        const minimumDisplayTime = 4000;
+        const minimumDisplayTime = 4000; // Keep splash visible for at least 4 seconds
         const startTime = Date.now();
 
-        await SplashScreen.hideAsync(); // Hide the system splash screen
+        await SplashScreen.hideAsync(); // Hide the native OS splash screen
 
-        // Ensure our custom splash screen stays visible for the minimum time
+        // Calculate remaining time needed for our custom splash
         const elapsedTime = Date.now() - startTime;
         const remainingTime = Math.max(0, minimumDisplayTime - elapsedTime);
 
+        // Set isLoading to false after the minimum display time
         setTimeout(() => {
           setIsLoading(false);
         }, remainingTime);
       } catch (error) {
-        console.warn("Error loading assets:", error);
-        setIsLoading(false); // Ensure we exit loading state even on error
+        console.warn("Error loading splash assets:", error);
+        setIsLoading(false); // Ensure loading stops even if assets fail
       }
     }
-
     preloadAssets();
-  }, []);
+  }, []); // Run only once on mount
 
-  // Download videos effect remains the same
+  // --- Video Download Effect ---
   useEffect(() => {
+    // Download videos listed in VIDEO_LIST
     (async () => {
-      // await clearDownloadedVideos(); // only for testing purposes don't use it in production
+      // await clearDownloadedVideos(); // Uncomment only if you need to force re-download for testing
+      console.log("Starting video downloads...");
       let completed = 0;
       for (const video of VIDEO_LIST) {
-        await downloadVideo(video.id, video.url);
+        try {
+          await downloadVideo(video.id, video.url);
+          console.log(`Successfully downloaded video ${video.id}`);
+        } catch (downloadError) {
+          console.error(`Failed to download video ${video.id} from ${video.url}:`, downloadError);
+          // Optional: Add logic here to retry or notify the user
+        }
         completed++;
-        setDownloadProgress(completed);
+        setDownloadProgress(completed); // Update progress state
       }
-      setVideoAssetsLoaded(true);
+      console.log("All video downloads attempted.");
+      setVideoAssetsLoaded(true); // Mark video loading as complete
     })();
-  }, []);
+  }, []); // Run only once on mount
 
   const animatedStyle = useAnimatedStyle(() => ({
+    // Style for splash image animation
     transform: [{ scale: scale.value }],
     opacity: opacity.value,
   }));
 
-  // Render Splash Screen
+  // --- Render Logic ---
+
+  // 1. Show Custom Splash Screen while initial assets load
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#6B21A8" }}>
         <StatusBar hidden={true} />
+        {/* You could apply animatedGlow here if you want the image itself to glow */}
         <Animated.Image source={splash_img} style={[{ width: 400, height: 400 }, animatedStyle]} resizeMode="contain" />
       </View>
     );
   }
 
-  // Render Video Download Modal
+  // 2. Show Video Download Modal while videos are downloading
   if (!videoAssetsLoaded) {
     return (
       <Modal visible={!videoAssetsLoaded} transparent={true} animationType="fade">
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <View style={{ backgroundColor: "white", padding: 20, borderRadius: 10, width: 250, alignItems: "center" }}>
             <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10, color: "#333" }}>
-              Downloading Videos...
+              Downloading Initial Videos...
             </Text>
             <Text style={{ fontSize: 14, color: "#555", marginBottom: 5 }}>
-              {downloadProgress} videos downloaded out of {VIDEO_LIST.length}
+              {downloadProgress} / {VIDEO_LIST.length} completed
             </Text>
-            <ProgressBar progress={downloadProgress / VIDEO_LIST.length} color="#6B21A8" style={{ height: 10, width: 200, borderRadius: 5 }} />
+            <ProgressBar
+              progress={VIDEO_LIST.length > 0 ? downloadProgress / VIDEO_LIST.length : 0}
+              color="#6B21A8" // Purple progress bar
+              style={{ height: 10, width: 200, borderRadius: 5, marginBottom: 5 }}
+            />
             <Text style={{ fontSize: 12, color: "#888", marginTop: 5 }}>
-              Please wait...
+              Please wait, this may take a moment...
             </Text>
           </View>
         </View>
@@ -147,21 +167,30 @@ export default function RootLayout() {
     );
   }
 
-  // Render the main app content once everything is loaded
+  // 3. Render the main app content once everything is ready
   return (
-    // Wrap the entire app in Suspense and SQLiteProvider
-    // Make sure 'test.db' is the correct name for your database file
+    // Wrap the entire app structure in Suspense for SQLite loading
     <Suspense fallback={<Text>Loading Database...</Text>}>
-      <SQLiteProvider databaseName="test.db" onInit={initializeDatabase} useSuspense>
+      {/*
+        Provide the SQLite database context to the whole app.
+        IMPORTANT: Change "test.db" to the actual database filename
+        used by your `initializeDatabase` function (e.g., "videos.db").
+      */}
+      <SQLiteProvider databaseName="videoAnalytics.db" onInit={initializeDatabase} useSuspense>
+        {/* Provides user context (like login status) to the app */}
         <UserProvider>
+          {/* Defines the navigation structure using Expo Router */}
           <Stack>
+            {/* These screens are defined by folders/files in your 'app' directory */}
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="video" options={{ headerShown: false }} />
             <Stack.Screen name="pdf" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen name="dashboard" options={{ headerShown: false }} />
           </Stack>
+          {/* Component for syncing data to the cloud (Supabase) */}
           <SyncToCloud />
+          {/* Controls the appearance of the device's status bar (time, battery, etc.) */}
           <StatusBar style="light" />
         </UserProvider>
       </SQLiteProvider>
