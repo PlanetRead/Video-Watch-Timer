@@ -157,10 +157,9 @@ const SyncToCloud = () => {
         pin: user.pin,
       }));
 
-      // ----------------- THIS IS THE FIX -----------------
+      // Fixed table name
       const { error: usersError } = await supabase.from("users").upsert(userUpsertData);
-      // ---------------------------------------------------
-
+      
       if (usersError) {
         return { success: false, error: `Error syncing users: ${usersError.message}` };
       }
@@ -173,6 +172,9 @@ const SyncToCloud = () => {
             : null;
 
           return {
+            // ----------------- THIS IS THE FIX -----------------
+            id: analytics.id, // We were missing this ID
+            // ---------------------------------------------------
             user_id: user.id,
             name: user.user_name,
             video_id: analytics.video_id,
