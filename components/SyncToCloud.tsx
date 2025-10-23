@@ -1,16 +1,12 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  ActivityIndicator,
-} from "react-native";
-import React, { useEffect } from "react";
+// No UI imports needed - completely invisible component
+import React, { useEffect, useRef } from "react";
 import { supabase } from "@/utils/SupabaseConfig";
 import { getUsers, getVideoAnalyticsByUser } from "@/app/database/database";
 import { useSQLiteContext } from "expo-sqlite";
 import { videoDetails } from "@/assets/details";
-import { useState } from "react";
+import { useNetInfo } from "@react-native-community/netinfo";
+// No useState needed - completely invisible component
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface User {
   id: string;
@@ -35,33 +31,101 @@ interface VideoAnalytics {
 
 const SyncToCloud = () => {
   const db = useSQLiteContext();
-  const [syncState, setSyncState] = useState<
-    "idle" | "inProgress" | "success" | "failure"
-  >("idle");
-  const [showModal, setShowModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>("");
+  const netInfo = useNetInfo();
+  const wasConnected = useRef<boolean | null>(null);
+  // No UI state needed - completely invisible component
+  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSyncTime = useRef<number>(0);
+  const SYNC_DEBOUNCE_TIME = 30000; // 30 seconds minimum between syncs
 
-  // Function to clean error messages
-  const cleanErrorMessage = (error: string): string => {
-    return error.replace(/(TypeError|Error|SyntaxError|ReferenceError):\s*/gi, '');
-  };
+  // Periodic sync when connected to internet (every 5 minutes)
+  useEffect(() => {
+    if (netInfo.isConnected) {
+      // Set up periodic sync every 5 minutes
+      syncIntervalRef.current = setInterval(() => {
+        console.log("Periodic sync triggered.");
+        fetchUserDetails("periodic");
+      }, 5 * 60 * 1000); // 5 minutes
+    } else {
+      // Clear interval when disconnected
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
+    }
 
-  const fetchUserDetails = async () => {
+    // Cleanup on unmount
+    return () => {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+      }
+    };
+  }, [netInfo.isConnected]);
+
+  // Listen for sync triggers from other parts of the app
+  useEffect(() => {
+    const checkSyncTrigger = async () => {
+      try {
+        const triggerValue = await AsyncStorage.getItem('triggerSync');
+        if (triggerValue && netInfo.isConnected) {
+          console.log("Sync triggered by analytics update.");
+          await AsyncStorage.removeItem('triggerSync'); // Clear the trigger
+          fetchUserDetails("analytics_update");
+        }
+      } catch (error) {
+        console.error("Error checking sync trigger:", error);
+      }
+    };
+
+    // Check for sync triggers every 5 seconds (optimized frequency)
+    const interval = setInterval(checkSyncTrigger, 5000);
+
+    return () => clearInterval(interval);
+  }, [netInfo.isConnected]);
+
+  useEffect(() => {
+    // Check if the device just came online
+    if (netInfo.isConnected && wasConnected.current === false) {
+      console.log("Internet connection restored. Starting automatic sync.");
+      fetchUserDetails("connection_restored");
+    }
+    // Also sync when app starts and internet is already available
+    else if (netInfo.isConnected && wasConnected.current === null) {
+      console.log("App started with internet connection. Starting automatic sync.");
+      // Add a small delay to ensure the app is fully initialized
+      setTimeout(() => {
+        fetchUserDetails("app_start");
+      }, 2000);
+    }
+    // Update the previous connection state
+    wasConnected.current = netInfo.isConnected;
+  }, [netInfo.isConnected]);
+
+  // No error message cleaning needed - completely invisible component
+
+  const fetchUserDetails = async (triggeredBy: string = "unknown") => {
+    // Debounce sync to prevent too frequent syncs
+    const now = Date.now();
+    if (now - lastSyncTime.current < SYNC_DEBOUNCE_TIME) {
+      console.log(`Sync debounced. Last sync was ${Math.round((now - lastSyncTime.current) / 1000)}s ago.`);
+      return;
+    }
+
+    console.log(`Sync triggered by: ${triggeredBy}`);
+    lastSyncTime.current = now;
+
     console.log("Syncing to cloud...");
-    setSyncState("inProgress");
-    setShowModal(true);
-    setErrorMessage("");
 
     try {
       const users: User[] = await getUsers(db); // Fetch all users
 
       // Fetch video analytics for each user
-      for (const user of users) {
+      await Promise.all(users.map(async (user) => {
         const videoAnalytics: VideoAnalytics[] = await getVideoAnalyticsByUser(
           db,
           user.id
         );
-        const mergedAnalytics = videoAnalytics.map((item) => {
+        user.video_analytics = videoAnalytics.map((item) => {
           const videoDetail =
             videoDetails.find((video) => {
               return video.id === item.video_id.toString();
@@ -69,87 +133,66 @@ const SyncToCloud = () => {
 
           return { ...item, ...videoDetail };
         });
-        user.video_analytics = mergedAnalytics;
-      }
+      }));
 
       console.log(users);
       const syncResult = await syncUsers(users); // Sync users to the cloud
 
       if (syncResult.success) {
         console.log("Synced to cloud successfully");
-        setSyncState("success");
       } else {
         console.error("Error syncing to cloud:", syncResult.error);
-        setErrorMessage(
-          syncResult.error
-            ? cleanErrorMessage(syncResult.error)
-            : "Unknown error occurred"
-        );
-        setSyncState("failure");
       }
     } catch (error) {
       console.error("Error fetching user details:", error);
-      const errorMsg =
-        error instanceof Error ? error.
-        message : "Unknown error occurred";
-      setErrorMessage(cleanErrorMessage(errorMsg));
-      setSyncState("failure");
     }
   };
 
   async function syncUsers(users: User[]) {
     try {
-      for (const user of users) {
-        // Upsert user
-        const { error: userError } = await supabase.from("user").upsert({
-          id: user.id,
-          user_name: user.user_name,
-          pin: user.pin,
-        });
+      // 1. Upsert all users in a single batch
+      const userUpsertData = users.map(user => ({
+        id: user.id,
+        user_name: user.user_name,
+        pin: user.pin,
+      }));
 
-        if (userError) {
+      const { error: usersError } = await supabase.from("user").upsert(userUpsertData);
+      if (usersError) {
+        return { success: false, error: `Error syncing users: ${usersError.message}` };
+      }
+
+      // 2. Collect all video analytics from all users
+      const allAnalytics = users.flatMap(user =>
+        user.video_analytics?.map(analytics => {
+          const lastTimestamp = analytics.last_time_stamp
+            ? new Date(analytics.last_time_stamp).toISOString() // Use ISO string for consistency
+            : null;
+
           return {
-            success: false,
-            error: `Error syncing data: ${userError.message}`,
+            user_id: user.id,
+            name: user.user_name,
+            video_id: analytics.video_id,
+            english_title: analytics.english_title,
+            punjabi_title: analytics.punjabi_title,
+            level: analytics.level,
+            date: analytics.date,
+            total_views_day: analytics.total_views_day,
+            total_time_day: analytics.total_time_day,
+            last_time_stamp: lastTimestamp,
+            language: analytics.language,
           };
-        }
+        }) ?? []
+      );
 
-        // Upsert video analytics
-        if (user.video_analytics?.length) {
-          for (const analytics of user.video_analytics) {
-            const lastTimestamp = analytics.last_time_stamp
-              ? new Date(analytics.last_time_stamp).getTime()
-              : null;
+      // 3. Upsert all analytics in a single batch
+      if (allAnalytics.length > 0) {
+        const { error: analyticsError } = await supabase
+          .from("video_analytics")
+          .upsert(allAnalytics, { onConflict: 'user_id,video_id,date,language' });
 
-            const { error: analyticsError } = await supabase
-              .from("video_analytics")
-               .upsert(
-                [
-                  {
-                    user_id: user.id,
-                    name:user.user_name,
-                    video_id: analytics.video_id,
-                    english_title: analytics.english_title,
-                    punjabi_title: analytics.punjabi_title,
-                    level: analytics.level,
-                    date: analytics.date,
-                    total_views_day: analytics.total_views_day,
-                    total_time_day: analytics.total_time_day,
-                    last_time_stamp: lastTimestamp,
-                    language: analytics.language,
-                    }
-                ],
-                {
-                  onConflict: 'user_id,video_id,date,language',
-              });
-
-            if (analyticsError) {
-              return {
-                success: false,
-                error: `Error syncing analytics for video ${analytics.video_id}: ${analyticsError.message}`,
-              };
-            }
-          }
+        if (analyticsError) {
+          return { success: false, error: `Error syncing analytics: ${analyticsError.message}` };
         }
       }
 
@@ -165,99 +208,10 @@ const SyncToCloud = () => {
     }
   }
 
-  const closeModal = () => {
-    setShowModal(false);
-    setSyncState("idle");
-  };
+  // No modal functions needed - completely invisible component
 
-  return (
-    <View>
-      <TouchableOpacity className="bg-[#ECE6F0] p-3 w-full">
-        <Text
-          className="text-purple-700 text-center font-bold"
-          onPress={fetchUserDetails}
-        >
-          SYNC TO CLOUD
-        </Text>
-      </TouchableOpacity>
-
-      {/* Modal for Sync Progress */}
-      <Modal
-        transparent={true}
-        visible={showModal}
-        animationType="fade"
-        onRequestClose={closeModal}
-      >
-        <View className=" flex-1 bg-red-600 justify-center items-center">
-          <View
-            style={{
-              backgroundColor: "white",
-              padding: 24,
-              borderRadius: 16,
-              width: "80%",
-              minHeight: 200,
-              alignItems: "center",
-              justifyContent: "center",
-              shadowColor: "#000",
-              shadowOffset: {
-                width: 0,
-                height: 2,
-              },
-              shadowOpacity: 0.25,
-              shadowRadius: 4,
-              elevation: 5,
-              marginTop: -50,
-            }}
-            className="bg-white p-6 rounded-lg w-4/5 items-center"
-          >
-            {syncState === "inProgress" && (
-              <>
-                <ActivityIndicator size="large" color="#8B5CF6" />
-                <Text className="mt-4 text-gray-700 font-medium text-center">
-                  Syncing data to cloud...
-                </Text>
-              </>
-            )}
-
-            {syncState === "success" && (
-              <>
-                <Text className="text-green-600 font-bold text-lg mb-2">
-                  Success!
-                </Text>
-                <Text className="text-gray-700 text-center mb-4">
-                  All data has been successfully synced to the cloud.
-                </Text>
-                <TouchableOpacity
-                  className="bg-purple-600 py-2 px-6 rounded-md mt-2"
-                  onPress={closeModal}
-                >
-                  <Text className="text-black font-bold">Close</Text>
-                </TouchableOpacity>
-              </>
-            )}
-
-            {syncState === "failure" && (
-              <>
-                <Text className="text-red-600 font-bold text-lg mb-2">
-                  Error
-                </Text>
-                <Text className="text-gray-700 text-center mb-4">
-                  {errorMessage ||
-                    "Failed to sync data. Please check your connection and try again."}
-                </Text>
-                <TouchableOpacity
-                  className="bg-purple-600 py-2 px-6 rounded-md mt-2"
-                  onPress={closeModal}
-                >
-                  <Text className="text-black font-bold">Close</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
-    </View>
-  );
+  // Completely invisible component - no UI, just background sync
+  return null;
 };
 
 export default SyncToCloud;
