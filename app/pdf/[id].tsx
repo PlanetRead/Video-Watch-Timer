@@ -1,45 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, Alert, Text, TouchableOpacity, Image } from 'react-native';
+import { View, ActivityIndicator, Alert, Text } from 'react-native';
 import Pdf from 'react-native-pdf';
 import * as FileSystem from 'expo-file-system';
-import { Asset } from 'expo-asset';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Asset } from 'expo-asset'; // This is the key
+import { useLocalSearchParams } from 'expo-router';
 import { videoDetails } from '../../assets/details';
 
 const PdfViewer = () => {
   const [pdfUri, setPdfUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
   const { id, language } = useLocalSearchParams<{ id?: string; language?: string }>();
 
   const video = videoDetails.find((v) => v.id === id);
-  const pdf = video ? (language === "pa" ? video.pdf_punjabi : video.pdf_en) : null;
+  const pdfAsset = video ? (language === "pa" ? video.pdf_punjabi : video.pdf_en) : null;
   const title = video ? (language === "pa" ? video.punjabi_title : video.english_title) : 'PDF Viewer';
-  const back = require('@/assets/images/back.png');
 
   useEffect(() => {
     const loadPdf = async () => {
       try {
         console.log("🔄 Starting to load PDF...");
-
-        // Load the asset
-        const asset = pdf;
-        if (!asset) {
-          Alert.alert('Error', 'PDF not found');
-          console.error('❌ PDF not found');
+        
+        // Check if pdfAsset is valid
+        if (!pdfAsset) {
+          Alert.alert('Error', 'PDF asset definition not found');
+          console.error('❌ PDF asset definition not found in videoDetails');
+          setLoading(false);
           return;
         }
+        
+        // THIS IS THE FIX: pdfAsset is ALREADY an Asset object.
+        // We do NOT need Asset.fromModule().
+        const asset = pdfAsset; 
+        
+        console.log("🔽 Downloading asset...");
         await asset.downloadAsync();
+        console.log("📂 Asset local URI:", asset.localUri || asset.uri);
 
-        console.log("📂 Asset path:", asset.uri);
         const fileUri = `${FileSystem.cacheDirectory}${video?.id}_${language}.pdf`;
-        // Check if file exists, else copy it
         const fileExists = await FileSystem.getInfoAsync(fileUri);
+
         if (!fileExists.exists) {
           console.log("🚀 Copying file to cache...");
-          await FileSystem.copyAsync({ from: asset.uri, to: fileUri });
+          await FileSystem.copyAsync({ from: asset.localUri || asset.uri, to: fileUri });
         } else {
-          console.log("✅ File already exists in cache");
+          console.log("✅ File already in cache");
         }
 
         console.log("✅ PDF successfully loaded:", fileUri);
@@ -52,25 +56,18 @@ const PdfViewer = () => {
     };
 
     loadPdf();
-  }, []);
+  }, [pdfAsset]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f2f2f2' }}>
-      {/* Header with Back Button and Title */}
+      {/* Header */}
       <View className="flex-row items-center justify-start p-2 bg-white shadow-2xl pt-12 elevation-lg">
-  {/* <TouchableOpacity onPress={() => router.push("/")} className="p-2">
-    <Image 
-      source={back} 
-      className="w-6 h-6" 
-      resizeMode="contain" 
-    />
-  </TouchableOpacity> */}
-  <Text className="text-lg font-bold text-black ml-2">
-    {title || 'PDF Viewer'}
-  </Text>
-</View>
+        <Text className="text-lg font-bold text-black ml-2">
+          {title || 'PDF Viewer'}
+        </Text>
+      </View>
 
-
+      {/* Content */}
       {loading ? (
         <ActivityIndicator size="large" color="blue" style={{ flex: 1 }} />
       ) : pdfUri ? (
@@ -84,7 +81,9 @@ const PdfViewer = () => {
           onError={(error) => console.log("❌ Error loading PDF:", error)}
         />
       ) : (
-        <View />
+        <View className="flex-1 justify-center items-center">
+          <Text className="text-red-500">Could not load PDF.</Text>
+        </View>
       )}
     </View>
   );
