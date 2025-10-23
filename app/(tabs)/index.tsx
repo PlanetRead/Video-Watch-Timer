@@ -222,7 +222,12 @@ const VideoList = () => {
           textStyle={{ fontSize: 11 }}
           arrowIconStyle={{ marginHorizontal: -5 }}
         />
-        <TouchableOpacity className="w-[100px] h-[70px] flex-1" onLongPress={() => router.push(`/login`)} delayLongPress={5000}>
+        
+        {/*
+        THIS IS THE FIX:
+        Changed 'onLongPress' to 'onPress' and removed 'delayLongPress'
+        */}
+        <TouchableOpacity className="w-[100px] h-[70px] flex-1" onPress={() => router.push(`/login`)}>
           <Image source={billion_readers} className="w-full h-full"
             style={{ resizeMode: "contain" }}
           />
@@ -230,60 +235,60 @@ const VideoList = () => {
       </View>
 
       {
-  loading ? (
-    <FlatList
-      data={[1, 2, 3, 4]}
-      keyExtractor={(item) => item.toString()}
-      renderItem={() => (
-        <View className="flex flex-row justify-between p-4 border-b-[1px] border-gray-100 h-[130px]">
-          <View className="bg-gray-100 w-[45%] h-[100px] rounded" />
-          <View className="w-[50%] pl-2 justify-between">
-            <View className="bg-gray-100 h-5 w-3/4 rounded mb-2" />
-            <View className="bg-gray-100 h-5 w-1/2 rounded" />
-          </View>
-        </View>
-      )}
-    />
-  ) : (<View>
-        <FlatList
-          contentContainerStyle={{ paddingBottom: 140 }}
-          data={videoDetails.filter(item => level === "all" || item.level === level)}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View className="flex flex-row items-cente justify-between p-2 border-b-[1px] border-gray-300 h-fit min-h-[130px]">
-              <TouchableOpacity
-                className="w-[45%]"
-                onPress={() => handleVideoPress(item)}
-              >
-                <Image
-                  source={videoLanguages[item.id] === "en" ? item.thumbnail_en : item.thumbnail_punjabi}
-                  className="h-[100px] w-full"
-                  style={styles.thumbnail}
-                />
-              </TouchableOpacity>
-
-              {/* Video Details along with pdf and translation option */}
-              <View className="flex w-[55%] pl-2 justify-between items-start h-[97px]">
-                <Text className="text-white text-left text-xl w-full font-bold break-words">
-                  {videoLanguages[item.id] === "en" ? item.english_title : item.punjabi_title}
-                </Text>
-                <View className="flex gap-2 flex-row">
-                  <TouchableOpacity
-                    onPress={() => toggleVideoLanguage(item.id)}
-                    className="bg-white p-2.5 rounded-full">
-                    <Image className="w-6 h-6" source={translate_img} style={{ tintColor: 'black' }} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={()=>handlePdfPress(item)}
-                    className="bg-white p-2.5 rounded-full">
-                    <Image className="w-6 h-6" source={pdf_img} style={{ tintColor: 'black' }} />
-                  </TouchableOpacity>
+        loading ? (
+          <FlatList
+            data={[1, 2, 3, 4]}
+            keyExtractor={(item) => item.toString()}
+            renderItem={() => (
+              <View className="flex flex-row justify-between p-4 border-b-[1px] border-gray-100 h-[130px]">
+                <View className="bg-gray-100 w-[45%] h-[100px] rounded" />
+                <View className="w-[50%] pl-2 justify-between">
+                  <View className="bg-gray-100 h-5 w-3/4 rounded mb-2" />
+                  <View className="bg-gray-100 h-5 w-1/2 rounded" />
                 </View>
               </View>
-            </View>
-          )}
-        />
-      </View>
+            )}
+          />
+        ) : (<View>
+          <FlatList
+            contentContainerStyle={{ paddingBottom: 140 }}
+            data={videoDetails.filter(item => level === "all" || item.level === level)}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View className="flex flex-row items-cente justify-between p-2 border-b-[1px] border-gray-300 h-fit min-h-[130px]">
+                <TouchableOpacity
+                  className="w-[45%]"
+                  onPress={() => handleVideoPress(item)}
+                >
+                  <Image
+                    source={videoLanguages[item.id] === "en" ? item.thumbnail_en : item.thumbnail_punjabi}
+                    className="h-[100px] w-full"
+                    style={styles.thumbnail}
+                  />
+                </TouchableOpacity>
+
+                {/* Video Details along with pdf and translation option */}
+                <View className="flex w-[55%] pl-2 justify-between items-start h-[97px]">
+                  <Text className="text-white text-left text-xl w-full font-bold break-words">
+                    {videoLanguages[item.id] === "en" ? item.english_title : item.punjabi_title}
+                  </Text>
+                  <View className="flex gap-2 flex-row">
+                    <TouchableOpacity
+                      onPress={() => toggleVideoLanguage(item.id)}
+                      className="bg-white p-2.5 rounded-full">
+                      <Image className="w-6 h-6" source={translate_img} style={{ tintColor: 'black' }} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={()=>handlePdfPress(item)}
+                      className="bg-white p-2.5 rounded-full">
+                      <Image className="w-6 h-6" source={pdf_img} style={{ tintColor: 'black' }} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+          />
+        </View>
         )}
     </View>
   );
