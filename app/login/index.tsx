@@ -7,19 +7,25 @@ import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 
 const index = () => {
-  const id = process.env.EXPO_PUBLIC_ADMIN_ID
-  const pass = process.env.EXPO_PUBLIC_ADMIN_PASSWORD
+  const id = process.env.EXPO_PUBLIC_ADMIN_ID || '';
+  const pass = process.env.EXPO_PUBLIC_ADMIN_PASSWORD || '';
 
-  console.log("Admin ID: ", id);
-  console.log("Admin Password: ", pass);
+  console.log("Admin ID: ", id ? "Set" : "Not set");
+  console.log("Admin Password: ", pass ? "Set" : "Not set");
   const gov_logo = require('@/assets/images/billion_readers.png');
   const [adminId, setAdminId] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
 
   const handleLogin = () => {
+    if (!id || !pass) {
+      Alert.alert('Error', 'Admin credentials not configured. Please check environment variables.');
+      return;
+    }
+    
     if (adminId === id && password === pass) {
-      router.navigate('/dashboard');
+      console.log("Login successful, navigating to dashboard...");
+      router.replace('/dashboard');
     } else {
       Alert.alert('Error', 'Invalid credentials');
     }

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, AppStateStatus } from "react-native";
-import { videoDetails } from "../../assets/details";
 import { useRouter } from "expo-router";
 import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getUsers, createUser, deleteUser, checkSchema } from "../database/database";
+import { getUsers, createUser, deleteUser, checkSchema, getAllVideos, Video } from "../database/database";
 import { useSQLiteContext } from "expo-sqlite";
 import * as Application from 'expo-application';
 import { Platform } from 'expo-modules-core';
@@ -12,21 +11,13 @@ import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { useUser } from "../userContext";
 import { AppState } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 
 const gov_logo = require('@/assets/images/gov_logo.png');
 const billion_readers = require('@/assets/images/billion_readers.png');
 const translate_img = require('@/assets/images/translate.png');
 const pdf_img = require('@/assets/images/pdf.png');
 
-
-interface VideoItem {
-  id: string;
-  english_title: string;
-  punjabi_title: string;
-  thumbnail_en: any;
-  thumbnail_hindi: any;
-  level: string;
-}
 
 interface VideoLanguages {
   [key: string]: string;
@@ -58,14 +49,30 @@ const VideoList = () => {
   const [open, setOpen] = useState(false);
   const [language, setLanguage] = useState("en");
   const [loading, setLoading] = useState(true);
+  const [videos, setVideos] = useState<Video[]>([]);
   const [items] = useState([
     { label: "English", value: "en" },
     { label: "Hindi", value: "hi" },
   ]);
 
-  const [videoLanguages, setVideoLanguages] = useState(
-    Object.fromEntries(videoDetails.map((item) => [item.id, "en"]))
-  );
+  const [videoLanguages, setVideoLanguages] = useState<VideoLanguages>({});
+
+  // Load videos from database
+  const loadVideos = async () => {
+    try {
+      const dbVideos = await getAllVideos(db);
+      setVideos(dbVideos);
+      
+      // Initialize video languages
+      const languages: VideoLanguages = {};
+      dbVideos.forEach((video) => {
+        languages[video.id.toString()] = video.language;
+      });
+      setVideoLanguages(languages);
+    } catch (error) {
+      console.error("Error loading videos:", error);
+    }
+  };
 
   // Load saved languages when component mounts
   useEffect(() => {
@@ -73,13 +80,6 @@ const VideoList = () => {
       const savedLanguage = await AsyncStorage.getItem('languageDropdown');
       if (savedLanguage) {
         setLanguage(savedLanguage);
-        console.log("this is working")
-        // const newVideoLanguages: VideoLanguages = {};
-        // videoDetails.forEach((item) => {
-        //   newVideoLanguages[item.id] = savedLanguage;
-        // }
-        // );
-        // setVideoLanguages(newVideoLanguages);
       }
       const savedLanguages = await AsyncStorage.getItem('videoLanguages');
       if (savedLanguages) {
@@ -89,19 +89,28 @@ const VideoList = () => {
       if (savedLevel) {
         setLevel(savedLevel);
       }
+      await loadVideos();
       setLoading(false);
     };
     loadLanguages();
   }, []);
+
+  // Reload videos when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      loadVideos();
+    }, [])
+  );
 
 
   // Reset languages when app goes into the background
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       if (nextAppState === "background") {
-        const resetLanguages = Object.fromEntries(videoDetails.map((item) => [item.id, "en"]));
-        const resetLevel = Object.fromEntries(videoDetails.map((item) => [item.id, "all"]));
-        // console.log("Resetting languages to default:", resetLevel);
+        const resetLanguages: VideoLanguages = {};
+        videos.forEach((video) => {
+          resetLanguages[video.id.toString()] = video.language;
+        });
         setVideoLanguages(resetLanguages);
         setLevel("all");
         setLanguage("en");
@@ -113,7 +122,7 @@ const VideoList = () => {
 
     const subscription = AppState.addEventListener("change", handleAppStateChange);
     return () => subscription.remove();
-  }, []);
+  }, [videos]);
 
 
   useEffect(() => {
@@ -149,22 +158,14 @@ const VideoList = () => {
     { label: "Level 4", value: "4" },
   ]);
 
-  const handleLanguageChange = (callback: (prevValue: string) => string) => {
-    const newValue = callback(language);
+  const handleLanguageChange = (value: ((prevValue: string) => string) | string) => {
+    const newValue = typeof value === "function" ? value(language) : value;
     setLanguage(newValue);
-    console.log("Selected Language:", newValue);
     AsyncStorage.setItem('languageDropdown', newValue);
-    const newVideoLanguages: VideoLanguages = {};
-    videoDetails.forEach((item) => {
-      newVideoLanguages[item.id] = newValue;
-    });
-    setVideoLanguages(newVideoLanguages);
-    console.log("Updated video languages:", newVideoLanguages);
-    AsyncStorage.setItem('videoLanguages', JSON.stringify(newVideoLanguages)); // Save state
   };
 
-  const handleLevelChange = (callback: (prevValue: string) => string) => {
-    const newValue = callback(level);
+  const handleLevelChange = (value: ((prevValue: string) => string) | string) => {
+    const newValue = typeof value === "function" ? value(level) : value;
     setLevel(newValue);
     AsyncStorage.setItem('levelDropdown', newValue);
   };
@@ -178,15 +179,17 @@ const VideoList = () => {
     });
   };
 
-  const handleVideoPress = (item: VideoItem) => {
-    const itemLanguage = videoLanguages[item.id];
-    router.push(`/video/${item.id}?language=${itemLanguage}`);
+  const handleVideoPress = (video: Video) => {
+    const itemLanguage = videoLanguages[video.id.toString()] || video.language;
+    router.push(`/video/${video.id}?language=${itemLanguage}`);
   };
 
-  const handlePdfPress = (item: VideoItem) => {
-    const itemLanguage = videoLanguages[item.id];
-    router.push(`/pdf/${item.id}?language=${itemLanguage}`);
-  };
+  const filteredVideos = videos.filter((video) => {
+    const matchesLevel = level === "all" || video.level === level;
+    const videoLang = video.language || "en";
+    const matchesLanguage = language ? videoLang === language : true;
+    return matchesLevel && matchesLanguage;
+  });
 
   return (
     <View className="bg-purple-700 h-full flex-1">
@@ -244,47 +247,68 @@ const VideoList = () => {
         </View>
       )}
     />
-  ) : (<View>
-        <FlatList
-          contentContainerStyle={{ paddingBottom: 140 }}
-          data={videoDetails.filter(item => level === "all" || item.level === level)}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View className="flex flex-row items-cente justify-between p-2 border-b-[1px] border-gray-300 h-fit min-h-[130px]">
-              <TouchableOpacity
-                className="w-[45%]"
-                onPress={() => handleVideoPress(item)}
-              >
-                <Image
-                  source={videoLanguages[item.id] === "en" ? item.thumbnail_en : item.thumbnail_hindi}
-                  className="h-[100px] w-full"
-                  style={styles.thumbnail}
-                />
-              </TouchableOpacity>
+  ) : videos.length === 0 ? (
+        <View className="flex-1 items-center justify-center p-8">
+          <Text className="text-white text-xl font-bold text-center mb-4">
+            No videos available
+          </Text>
+          <Text className="text-white text-center opacity-80">
+            Please log in as admin to upload videos
+          </Text>
+        </View>
+      ) : (
+        <View>
+          <FlatList
+            contentContainerStyle={{ paddingBottom: 140 }}
+            data={filteredVideos}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => {
+              const itemLanguage = videoLanguages[item.id.toString()] || item.language;
+              const thumbnailUri = item.thumbnail_uri || null;
+              
+              return (
+                <View className="flex flex-row items-cente justify-between p-2 border-b-[1px] border-gray-300 h-fit min-h-[130px]">
+                  <TouchableOpacity
+                    className="w-[45%]"
+                    onPress={() => handleVideoPress(item)}
+                  >
+                    {thumbnailUri ? (
+                      <Image
+                        source={{ uri: thumbnailUri }}
+                        className="h-[100px] w-full"
+                        style={styles.thumbnail}
+                      />
+                    ) : (
+                      <View className="h-[100px] w-full bg-gray-600 items-center justify-center">
+                        <Text className="text-white text-xs">No Thumbnail</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
 
-              {/* Video Details along with pdf and translation option */}
-              <View className="flex w-[55%] pl-2 justify-between items-start h-[97px]">
-                <Text className="text-white text-left text-xl w-full font-bold break-words">
-                  {videoLanguages[item.id] === "en" ? item.english_title : item.punjabi_title}
-                </Text>
-                <View className="flex gap-2 flex-row">
-                  <TouchableOpacity
-                    onPress={() => toggleVideoLanguage(item.id)}
-                    className="bg-white p-2.5 rounded-full">
-                    <Image className="w-6 h-6" source={translate_img} style={{ tintColor: 'black' }} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={()=>handlePdfPress(item)}
-                    className="bg-white p-2.5 rounded-full">
-                    <Image className="w-6 h-6" source={pdf_img} style={{ tintColor: 'black' }} />
-                  </TouchableOpacity>
+                  {/* Video Details along with translation option */}
+                  <View className="flex w-[55%] pl-2 justify-between items-start h-[97px]">
+                    <Text className="text-white text-left text-xl w-full font-bold break-words">
+                      {item.title}
+                    </Text>
+                    {item.description ? (
+                      <Text className="text-white text-sm opacity-80 mt-1" numberOfLines={2}>
+                        {item.description}
+                      </Text>
+                    ) : null}
+                    <View className="flex gap-2 flex-row mt-2">
+                      <TouchableOpacity
+                        onPress={() => toggleVideoLanguage(item.id.toString())}
+                        className="bg-white p-2.5 rounded-full">
+                        <Image className="w-6 h-6" source={translate_img} style={{ tintColor: 'black' }} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </View>
-          )}
-        />
-      </View>
-        )}
+              );
+            }}
+          />
+        </View>
+      )}
     </View>
   );
 };

@@ -8,10 +8,9 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getVideoAnalyticsByUser, getUsers, deleteAllUserData, createUser, editUserName } from "../database/database";
+import { getVideoAnalyticsByUser, getUsers, deleteAllUserData, createUser, editUserName, getAllVideos, getVideoWatchSessionsByUser } from "../database/database";
 import { useSQLiteContext } from "expo-sqlite";
 import { Dimensions } from "react-native";
-import { videoDetails } from "../../assets/details";
 import DropDownPicker from "react-native-dropdown-picker";
 import { Ionicons } from "@expo/vector-icons";
 import PieChart from "react-native-pie-chart";
@@ -23,7 +22,8 @@ import * as Sharing from 'expo-sharing';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { Modal } from "react-native";
-import { create } from "react-test-renderer";
+import { useRouter } from "expo-router";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 
 // Define type for analytics data
@@ -34,7 +34,7 @@ type AnalyticsData = {
   total_time_day: number;
   total_views_day: number;
   date: string;
-  last_time_stamp: number | null;
+  last_time_stamp: string | number | null;
   user_id?: string;
   pdf_en?: string;
   pdf_hindi?: string;
@@ -44,12 +44,40 @@ type AnalyticsData = {
   thumbnail_en?: any;
   thumbnail_hindi?: any;
   level?: string;
+  video_duration?: number;
+  completed?: boolean;
+  isSessionEntry?: boolean;
 };
 
 const AnalyticsDashboard = () => {
-  const db = useSQLiteContext();
+  console.log("AnalyticsDashboard: Component rendering");
+  
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const db = useSQLiteContext();
+  const router = useRouter();
+  
+  console.log("Database available:", !!db, "Router available:", !!router);
+
+  // Check database availability immediately - but don't block rendering
+  useEffect(() => {
+    if (!db) {
+      console.warn("Database context is not available yet - will retry...");
+      // Don't set error immediately - give it time to initialize
+    } else if (!router) {
+      console.error("Router is not available!");
+      setError("Navigation not available. Please restart the app.");
+      setLoading(false);
+    } else {
+      // Both are available, clear any previous errors
+      if (error && error.includes("Database")) {
+        setError(null);
+      }
+    }
+  }, [db, router, error]);
 
    // Date range state
    const [startDate, setStartDate] = useState<Date | null>(null);
@@ -64,65 +92,178 @@ const AnalyticsDashboard = () => {
    const [editSuccess, setEditSuccess] = useState(false);
    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
    
-  
 
   useEffect(() => {
+    if (!db) {
+      console.log("Database not available in useEffect, will retry...");
+      // Set a timeout to prevent infinite loading
+      const timeout = setTimeout(() => {
+        console.error("Loading timeout - database still not available after 5 seconds");
+        setError("Database initialization is taking too long. Please restart the app.");
+        setLoading(false);
+      }, 5000); // 5 second timeout
+      return () => clearTimeout(timeout);
+    }
+    
+    console.log("AnalyticsDashboard: useEffect triggered, db:", !!db);
+    
+    let isMounted = true;
+    
     const fetchUserDetails = async () => {
+      if (!db) {
+        console.log("Database not available, setting error");
+        if (isMounted) {
+          setError("Database not initialized. Please wait...");
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
+        console.log("Fetching users from database...");
         const users = await getUsers(db); // Fetch all users
-        if (users.length > 0) {
-          setUserId(users[0].id);
-          setUsername(users[0].user_name) // Set the first user's ID
+        console.log("Users fetched:", users.length);
+        
+        if (isMounted) {
+          if (users.length > 0) {
+            setUserId(users[0].id);
+            setUsername(users[0].user_name); // Set the first user's ID
+            console.log("User set:", users[0].id);
+          } else {
+            // If no user exists, that's okay - analytics will be empty
+            console.log("No user found in database");
+          }
+          setError(null);
+          setLoading(false);
         }
       } catch (error) {
         console.error("Error fetching user details:", error);
+        if (isMounted) {
+          setError(error instanceof Error ? error.message : "Unknown error");
+          setLoading(false);
+        }
       }
     };
 
     fetchUserDetails();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [db]);
 
   const [totalTime, setTotalTime] = useState(0);
   const [totalViews, setTotalViews] = useState(0);
+  const [fullWatchTime, setFullWatchTime] = useState(0);
 
-  const calculateData = (data: AnalyticsData[]) => {
-    const totalTime = data.reduce(
+  const calculateData = React.useCallback((data: AnalyticsData[]) => {
+    const totalTimeCalculated = data.reduce(
       (sum, item) => sum + (item.total_time_day || 0),
       0
     );
-    const totalViews = data.reduce(
+    const totalViewsCalculated = data.reduce(
       (sum, item) => sum + (item.total_views_day || 0),
       0
     );
+    const completedWatchTime = data.reduce((sum, item) => {
+      if (item.completed) {
+        return sum + (item.video_duration || item.total_time_day || 0);
+      }
+      return sum;
+    }, 0);
 
-    setTotalTime(totalTime);
-    setTotalViews(totalViews);
-  }
+    setTotalTime(totalTimeCalculated);
+    setTotalViews(totalViewsCalculated);
+    setFullWatchTime(completedWatchTime);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
   
     const fetchDetails = async () => {
-      if (!userId) return;
+      if (!userId || !db) return;
   
       try {
         const data: AnalyticsData[] = await getVideoAnalyticsByUser(db, userId);
-  
+        const allVideos = await getAllVideos(db);
+        const watchSessions = await getVideoWatchSessionsByUser(db, userId);
+
         if (isMounted) {
-          // ✅ Always calculate fresh — don't add to previous state
-          calculateData(data);
-  
-          // 🔗 Merge with video details
-          const mergedData = data.map((item) => {
-            const videoDetail =
-              videoDetails.find(
-                (video) => video.id == item.video_id.toString()
-              ) || {};
-            return { ...item, ...videoDetail };
+          const videoMap = new Map(allVideos.map((video) => [video.id, video]));
+
+          const aggregatedEntries = data.map((item) => {
+            const normalizedTimestamp =
+              typeof item.last_time_stamp === "number"
+                ? new Date(item.last_time_stamp).toISOString()
+                : item.last_time_stamp ?? null;
+
+            const dbVideo = videoMap.get(item.video_id);
+
+            if (dbVideo) {
+              return {
+                ...item,
+                last_time_stamp: normalizedTimestamp,
+                english_title: dbVideo.title || "Unknown Video",
+                punjabi_title: dbVideo.title || "Unknown Video",
+                description: dbVideo.description || "",
+                level: dbVideo.level || "1",
+                thumbnail_en: dbVideo.thumbnail_uri ? { uri: dbVideo.thumbnail_uri } : null,
+                thumbnail_hindi: dbVideo.thumbnail_uri ? { uri: dbVideo.thumbnail_uri } : null,
+                isSessionEntry: false,
+              };
+            }
+
+            return {
+              ...item,
+              last_time_stamp: normalizedTimestamp,
+              english_title: item.english_title || "Unknown Video",
+              punjabi_title: item.punjabi_title || "Unknown Video",
+              level: item.level || "1",
+              isSessionEntry: false,
+            };
           });
-  
-          setAnalyticsData(mergedData);
-          // console.log("Analytics Data:", mergedData);
+
+          const sessionEntries = watchSessions.map((session) => {
+            const dbVideo = videoMap.get(session.video_id);
+            const watchedAt = session.watched_at ?? new Date().toISOString();
+            const sessionDate = watchedAt ? new Date(watchedAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
+
+            return {
+              id: session.id,
+              video_id: session.video_id,
+              language: session.language,
+              total_time_day: session.watch_time,
+              total_views_day: 1,
+              date: sessionDate,
+              last_time_stamp: watchedAt,
+              english_title: dbVideo?.title || `Video ${session.video_id}`,
+              punjabi_title: dbVideo?.title || `Video ${session.video_id}`,
+              description: dbVideo?.description || "",
+              level: dbVideo?.level || "1",
+              thumbnail_en: dbVideo?.thumbnail_uri ? { uri: dbVideo.thumbnail_uri } : null,
+              thumbnail_hindi: dbVideo?.thumbnail_uri ? { uri: dbVideo.thumbnail_uri } : null,
+              video_duration: session.video_duration ?? 0,
+              completed: !!session.completed,
+              isSessionEntry: true,
+            } as AnalyticsData;
+          });
+
+          const sessionKeySet = new Set(
+            sessionEntries.map(
+              (entry) => `${entry.video_id}|${entry.language}|${entry.date}`
+            )
+          );
+
+          const aggregatedFallback = aggregatedEntries.filter((entry) => {
+            const key = `${entry.video_id}|${entry.language}|${entry.date}`;
+            return !sessionKeySet.has(key);
+          });
+
+          const combinedData = [...sessionEntries, ...aggregatedFallback];
+
+          // ✅ Always calculate fresh — don't add to previous state
+          calculateData(combinedData);
+          setAnalyticsData(combinedData);
         }
       } catch (error) {
         console.error("Error fetching analytics:", error);
@@ -134,9 +275,8 @@ const AnalyticsDashboard = () => {
     return () => {
       isMounted = false;
     };
-  }, [db, userId]); // Added videoDetails just in case
+  }, [db, userId, calculateData]);
   
-
   const { height } = Dimensions.get("window");
 
   // Level Dropdown State
@@ -169,39 +309,49 @@ const AnalyticsDashboard = () => {
     { label: "Min Watched", value: "min_watch_time" },
   ]);
 
-  function sortDataByLastTimeStamp(filteredData: any[]) {
-    return filteredData.sort((a, b) => {
-      const dateA = new Date(a.last_time_stamp);
-      const dateB = new Date(b.last_time_stamp);
-      return dateB.getTime() - dateA.getTime(); // Sort in descending order
+  function sortDataByLastTimeStamp(data: any[]) {
+    // Create a copy to avoid mutating the original array
+    return [...data].sort((a, b) => {
+      const dateA = a.last_time_stamp ? new Date(a.last_time_stamp).getTime() : 0;
+      const dateB = b.last_time_stamp ? new Date(b.last_time_stamp).getTime() : 0;
+      return dateB - dateA; // Sort in descending order
     });
   }
 
   useEffect(() => {
     if (!sortoption) return;
-    sortDataByLastTimeStamp(filteredData);
-    let sortedData = [...filteredData];
+    
+    // Use functional update to get current filteredData state
+    setFilteredData((currentData) => {
+      if (currentData.length === 0) return currentData;
+      
+      // Create a copy to avoid mutation
+      let sortedData = [...currentData];
 
-    switch (sortoption) {
-      case "max_views":
-        sortedData.sort((a, b) => b.total_views_day - a.total_views_day);
-        break;
-      case "min_views":
-        sortedData.sort((a, b) => a.total_views_day - b.total_views_day);
-        break;
-      case "max_watch_time":
-        sortedData.sort((a, b) => b.total_time_day - a.total_time_day);
-        break;
-      case "min_watch_time":
-        sortedData.sort((a, b) => a.total_time_day - b.total_time_day);
-        break;
-      default:
-        break;
-    }
+      switch (sortoption) {
+        case "max_views":
+          sortedData.sort((a, b) => b.total_views_day - a.total_views_day);
+          break;
+        case "min_views":
+          sortedData.sort((a, b) => a.total_views_day - b.total_views_day);
+          break;
+        case "max_watch_time":
+          sortedData.sort((a, b) => b.total_time_day - a.total_time_day);
+          break;
+        case "min_watch_time":
+          sortedData.sort((a, b) => a.total_time_day - b.total_time_day);
+          break;
+        default:
+          break;
+      }
 
-    setFilteredData(sortedData);
-    console.log("Sorted Data:", sortedData);
+      console.log("Sorted Data:", sortedData);
+      return sortedData;
+    });
   }, [sortoption]);
+
+  const [filteredData, setFilteredData] = useState<AnalyticsData[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     console.log("AnalyticsDashboard Mounted");
@@ -210,9 +360,6 @@ const AnalyticsDashboard = () => {
       console.log("AnalyticsDashboard Unmounted");
     };
   }, []);
-
-  const [filteredData, setFilteredData] = useState<AnalyticsData[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
 
    // Handle date changes
    const onStartDateChange = (event:DateTimePickerEvent, selectedDate?:Date) => {
@@ -263,33 +410,25 @@ const AnalyticsDashboard = () => {
 
     // Date Range Filter
     if (startDate || endDate) {
-
-      // Normalize start and end dates
-      if (startDate) {
-        startDate.setHours(0, 0, 0, 0); // Start of day
-      }
-
-      if (endDate) {
-        endDate.setHours(23, 59, 59, 999); // End of day
-      }
-
       result = result.filter((item) => {
-        const itemDate = new Date(item.date); // what does it return? 
-        
+        const itemDate = new Date(item.date);
         
         // Check if date is valid
         if (isNaN(itemDate.getTime())) {
           return false;
         }
         
-        // Filter by start date if set
-        if (startDate && itemDate < startDate) {
-          return false;
+        // Filter by start date if set - create new Date to avoid mutation
+        if (startDate) {
+          const startOfDay = new Date(startDate);
+          startOfDay.setHours(0, 0, 0, 0);
+          if (itemDate < startOfDay) {
+            return false;
+          }
         }
         
-        // Filter by end date if set
+        // Filter by end date if set - create new Date to avoid mutation
         if (endDate) {
-          // Set end date to end of day
           const endOfDay = new Date(endDate);
           endOfDay.setHours(23, 59, 59, 999);
           if (itemDate > endOfDay) {
@@ -301,11 +440,11 @@ const AnalyticsDashboard = () => {
       });
     }
 
-    sortDataByLastTimeStamp(result);
-    setFilteredData(result);
-    calculateData(result);
-    console.log("Filtered Data:", result);
-  }, [searchQuery, analyticsData, selectedLevel, startDate, endDate, selectedLanguage]);
+    const sortedResult = sortDataByLastTimeStamp(result);
+    setFilteredData(sortedResult);
+    calculateData(sortedResult);
+    console.log("Filtered Data:", sortedResult);
+  }, [searchQuery, analyticsData, selectedLevel, startDate, endDate, selectedLanguage, calculateData]);
 
   const widthAndHeight = 150;
 
@@ -344,6 +483,10 @@ const AnalyticsDashboard = () => {
   }
 
   const deleteData = async () => {
+    if (!db) {
+      console.error("Database not available for delete operation");
+      return;
+    }
     try {
       alert("Deleting all user data");
       await deleteAllUserData(db);
@@ -351,32 +494,108 @@ const AnalyticsDashboard = () => {
       setAnalyticsData([]); // Clear the local state
       setTotalTime(0);
       setTotalViews(0);
-      setDeleteModalVisible(false)
+      setDeleteModalVisible(false);
     } catch (error) {
       console.error("Error deleting user data:", error);
+      alert("Error deleting user data. Please try again.");
     }
   }
 
    // Format date for display
    const formatDate = (date:Date) => {
     if (!date) return "Select";
-    return date.toLocaleDateString("en-CA")
+    return date.toLocaleDateString("en-CA");
   };
 
+  if (loading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }} className="bg-white p-4">
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
+          <Text style={{ color: '#000000', fontSize: 18, fontWeight: 'bold' }}>Loading Dashboard...</Text>
+          <Text style={{ color: '#666', fontSize: 14, marginTop: 8 }}>Please wait...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }} className="bg-white p-4">
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', padding: 20 }}>
+          <Text style={{ color: '#dc2626', fontSize: 18, marginBottom: 8, fontWeight: 'bold', textAlign: 'center' }}>Error: {error}</Text>
+          {db && (
+            <TouchableOpacity
+              className="bg-purple-700 px-4 py-2 rounded"
+              onPress={() => {
+                setError(null);
+                setLoading(true);
+                const fetchUserDetails = async () => {
+                  try {
+                    const users = await getUsers(db);
+                    if (users.length > 0) {
+                      setUserId(users[0].id);
+                      setUsername(users[0].user_name);
+                    }
+                    setLoading(false);
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : "Unknown error");
+                    setLoading(false);
+                  }
+                };
+                fetchUserDetails();
+              }}
+            >
+              <Text className="text-white">Retry</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  if (!db || !router) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <Text style={{ color: '#dc2626', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+            Initialization Error
+          </Text>
+          <Text style={{ color: '#666', fontSize: 16, textAlign: 'center' }}>
+            Database or router not available. Please restart the app.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
   return (
     <SafeAreaView
-      style={{ flex: 1, minHeight: height, maxHeight: "auto" }}
+      style={{ flex: 1, backgroundColor: '#ffffff' }}
       className="bg-white p-4"
     >
-      <View className="flex-1">
-        {/* <View className="flex "> */}
+      <View style={{ flex: 1 }}>
+        {/* Navigation Tabs */}
+        <View className="flex-row gap-2 mb-4">
+          <TouchableOpacity
+            className="flex-1 bg-purple-700 p-3 rounded-lg"
+            onPress={() => router.push("/dashboard")}
+          >
+            <Text className="text-white text-center font-bold">Analytics</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="flex-1 bg-gray-200 p-3 rounded-lg"
+            onPress={() => router.push("/dashboard/upload")}
+          >
+            <Text className="text-purple-700 text-center font-bold">Upload Video</Text>
+          </TouchableOpacity>
+        </View>
+
         <Text className="text-black text-2xl font-black text-center">
           Analytics
         </Text>
         <Text className="text-gray-400 text-md font-black text-center">
-          {userId}
+          {userId || "Loading..."}
         </Text>
-        {/* </View> */}
 
         <View className="flex flex-row gap-4 justify-around">
           <View>
@@ -405,6 +624,9 @@ const AnalyticsDashboard = () => {
               </Text>
               <Text className="text-black text-base">Watch Time</Text>
             </View>
+            <Text className="text-gray-500 text-xs text-center mt-2">
+              Full Watch Time: {fullWatchTime} s
+            </Text>
           </View>
         </View>
 
@@ -426,7 +648,17 @@ const AnalyticsDashboard = () => {
         <View className="flex-row justify-between my-2 space-x-2 gap-2">
         {/* SyncToCloud component taking half width */}
         <View className="flex-1">
-          <SyncToCloud />
+          <ErrorBoundary
+            fallback={
+              <View style={{ padding: 10 }}>
+                <Text style={{ color: '#dc2626', fontSize: 12, textAlign: 'center' }}>
+                  Sync Error
+                </Text>
+              </View>
+            }
+          >
+            <SyncToCloud />
+          </ErrorBoundary>
         </View>
         
         {/* Delete button taking half width */}
@@ -462,7 +694,11 @@ const AnalyticsDashboard = () => {
             value={selectedLevel}
             items={levelItems}
             setOpen={setLevelOpen}
-            setValue={(newValue) => setSelectedLevel(newValue)}
+            setValue={(value) => {
+              const updatedValue =
+                typeof value === "function" ? value(selectedLevel) : value;
+              setSelectedLevel(updatedValue);
+            }}
             containerStyle={{ maxWidth: 125 }}
             placeholder="Select Level"
             style={{
@@ -487,7 +723,11 @@ const AnalyticsDashboard = () => {
             value={selectedLanguage}
             items={languageItems}
             setOpen={setLanguageOpen}
-            setValue={(newValue) => setSelectedLanguage(newValue)}
+            setValue={(value) => {
+              const updatedValue =
+                typeof value === "function" ? value(selectedLanguage) : value;
+              setSelectedLanguage(updatedValue);
+            }}
             containerStyle={{ maxWidth: 125 }}
             placeholder="Select Lang"
             style={{
@@ -655,19 +895,26 @@ const AnalyticsDashboard = () => {
         <FlatList
           data={filteredData}
           keyExtractor={(_, index) => index.toString()}
-          renderItem={({ item }) => (
+          renderItem={({ item }) => {
+            const thumbnailSource = item.language === "en"
+              ? item.thumbnail_en
+              : item.thumbnail_hindi;
+            
+            return (
             <View className="flex-row justify-between border-b border-white py-2">
               <View className="flex flex-row items-center justify-between border-b-[1px] border-gray-300 h-fit min-h-[130px]">
-                <Image
-                  source={
-                    item.language === "en"
-                      ? item.thumbnail_en
-                      : item.thumbnail_hindi
-                  }
-                  style={{ height: 100, width: "50%" }}
-                  resizeMode="contain"
-                  className="w-1/2"
-                />
+                {thumbnailSource ? (
+                  <Image
+                    source={thumbnailSource}
+                    style={{ height: 100, width: "50%" }}
+                    resizeMode="contain"
+                    className="w-1/2"
+                  />
+                ) : (
+                  <View className="w-1/2 h-[100px] bg-gray-300 items-center justify-center">
+                    <Text className="text-gray-500 text-xs">No Thumbnail</Text>
+                  </View>
+                )}
 
                 {/* Video Details */}
                 <View className="flex w-1/2 ml-2 justify-between items-start gap-0 min-h-[100px]">
@@ -685,6 +932,18 @@ const AnalyticsDashboard = () => {
                       Watch Time: {item.total_time_day} s
                     </Text>
 
+                    {typeof item.video_duration === "number" && item.video_duration > 0 && (
+                      <Text className="text-sm font-bold text-purple-700">
+                        Video Duration: {item.video_duration} s
+                      </Text>
+                    )}
+
+                    {typeof item.completed === "boolean" && (
+                      <Text className="text-sm font-bold text-purple-700">
+                        Completed Watch: {item.completed ? "Yes" : "No"}
+                      </Text>
+                    )}
+
                     <Text className="text-sm font-bold text-purple-700">
                       Total Views: {item.total_views_day}
                     </Text>
@@ -694,13 +953,14 @@ const AnalyticsDashboard = () => {
                       {item.language === "en" ? "English" : "Hindi"}
                     </Text>
                     <Text className="text-sm font-bold text-purple-700">
-                      Last Watched: {item.date.split("-").reverse().join("-")}
+                      Last Watched: {item.date ? item.date.split("-").reverse().join("-") : "N/A"}
                     </Text>
                   </View>
                 </View>
               </View>
             </View>
-          )}
+            );
+          }}
         />
         
       </View>
@@ -733,17 +993,23 @@ const AnalyticsDashboard = () => {
             <TouchableOpacity
               className="bg-purple-700 px-4 py-2 rounded"
               onPress={() => {
-                if (newUsername.trim()) {
+                if (newUsername.trim() && userId) {
                   setUsername(newUsername);
                   deleteData();
-                  editUserName(db, userId!, newUsername)
+                  editUserName(db, userId, newUsername)
                     .then(() => {
                       setEditSuccess(true);
 
+                      // Short timeout to show success message before closing modal
+                      // Note: No cleanup needed as timeout is very short (1.5s) and modal will still be visible
                       setTimeout(() => {
                         setEditModalVisible(false);
                         setEditSuccess(false);
                       }, 1500);
+                    })
+                    .catch((err) => {
+                      console.error("Error editing username:", err);
+                      setEditModalVisible(false);
                     });
                   setNewUsername("");  
                 }
@@ -790,7 +1056,26 @@ const AnalyticsDashboard = () => {
   );
 };
 
-export default AnalyticsDashboard;
+export default function DashboardScreen() {
+  return (
+    <ErrorBoundary
+      fallback={
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <Text style={{ color: '#dc2626', fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>
+              Dashboard Error
+            </Text>
+            <Text style={{ color: '#666', fontSize: 16, textAlign: 'center' }}>
+              Something went wrong. Please restart the app.
+            </Text>
+          </View>
+        </SafeAreaView>
+      }
+    >
+      <AnalyticsDashboard />
+    </ErrorBoundary>
+  );
+}
 
 export const styles = StyleSheet.create({
   container: { alignItems: "center", justifyContent: "center", height: 1050 },

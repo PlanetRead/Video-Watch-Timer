@@ -1,13 +1,12 @@
 import { useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { StyleSheet, View, Text, TouchableOpacity, Image, TouchableWithoutFeedback } from "react-native";
-import { videoDetails } from "@/assets/details";
+import { StyleSheet, View, TouchableOpacity, Image, Dimensions } from "react-native";
 import { useEffect, useState, useRef } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useRouter } from "expo-router";
 import { useKeepAwake } from 'expo-keep-awake';
 import { useSQLiteContext } from "expo-sqlite";
-import { getVideoAnalyticsByUser, getUsers } from "../database/database";
+import { getUsers, getVideoById, recordWatchSession } from "../database/database";
 import { getVideoUri } from "./videoDownlaoder";
 import { BackHandler } from "react-native"; // for handling back button press on android
 import { useFocusEffect } from "@react-navigation/native";
@@ -18,30 +17,33 @@ export default function VideoScreen() {
   const { id, language } = useLocalSearchParams<{ id?: string; language?: string }>();
   const [originalOrientation, setOriginalOrientation] = useState<ScreenOrientation.Orientation>();
   const back = require('@/assets/images/back.png');
-  const video = videoDetails.find((v) => v.id === id);
   const db = useSQLiteContext();
   const [fileUri, setFileUri] = useState<string | null>(null);
+  const [video, setVideo] = useState<any>(null);
+  const [windowDimensions, setWindowDimensions] = useState(Dimensions.get("window"));
   
   // References to track watch time that won't be affected by React's asynchronous updates
   const watchStartTimeRef = useRef<number | null>(null);
   const totalWatchTimeRef = useRef<number>(0);
   const [videoSource, setVideoSource] = useState<string | null>(null);
-  
-  // video_id_language -> video_3_en
-  const videoUri = `${video?.id}_${language == "hi" ? "hi" : "en"}`;
+  const hasEndedRef = useRef<boolean>(false);
 
   useEffect(() => {
-    const fetchVideoUri = async () => {
-      const uri = await getVideoUri(videoUri);
-      setFileUri(uri);
+    const fetchVideo = async () => {
+      if (!id) return;
       
-      if (uri && video) {
-        setVideoSource(uri);
+      const videoId = parseInt(id);
+      const dbVideo = await getVideoById(db, videoId);
+      
+      if (dbVideo) {
+        setVideo(dbVideo);
+        setFileUri(dbVideo.video_uri);
+        setVideoSource(dbVideo.video_uri);
       }
     };
 
-    fetchVideoUri();
-  }, []);
+    fetchVideo();
+  }, [id]);
 
   const player = useVideoPlayer(
     videoSource || '',
@@ -55,6 +57,20 @@ export default function VideoScreen() {
       await player.play();
     }
   );
+
+  // Listen for video end event
+  useEffect(() => {
+    if (!player) return;
+
+    const checkVideoEnd = setInterval(() => {
+      if (player.currentTime >= player.duration && player.duration > 0 && !hasEndedRef.current) {
+        hasEndedRef.current = true;
+        returnBackToHome();
+      }
+    }, 100);
+
+    return () => clearInterval(checkVideoEnd);
+  }, [player]);
 
   // More reliable way to track watch time using refs
   useEffect(() => {
@@ -94,48 +110,75 @@ export default function VideoScreen() {
     };
   }, [originalOrientation]);
 
-  const updateVideoAnalytics = async (watchedTime: number) => {
-    try {
-      const users = await getUsers(db);
-      const userId = users[0].id // need to get this from db
+const updateVideoAnalytics = async (
+  watchedTime: number,
+  options: { videoDuration?: number; completed?: boolean; watchedAt?: string } = {}
+) => {
+  if (!db || watchedTime <= 0) {
+    return;
+  }
 
-      const videoId = parseInt(id ?? "0"); // Ensure videoId is a number
-      const videoLang = language ?? "en"; // Default to "en" if undefined
-      const today = new Date().toISOString().split("T")[0]; // Get YYYY-MM-DD format
-      const lastWatchedTimestamp = new Date().toISOString(); // Get full timestamp
+  try {
+    const users = await getUsers(db);
+    if (users.length === 0) return;
 
-      console.log(`Updating analytics with: userId=${userId}, videoId=${videoId}, language=${videoLang}, watchedTime=${watchedTime}s`);
-  
-      // Check if the analytics entry exists for this user, video, language, and date
-      const existingRecords = await db.getAllAsync(
-        "SELECT * FROM video_analytics WHERE user_id = ? AND video_id = ? AND language = ? AND date = ?",
-        [userId, videoId, videoLang, today]
-      );
+    const userId = users[0].id;
+    const parsedVideoId = id ? parseInt(id, 10) : Number(video?.id ?? 0);
+    const videoId = Number.isNaN(parsedVideoId) ? Number(video?.id ?? 0) : parsedVideoId;
+    if (!videoId) {
+      console.warn("Unable to determine video ID for analytics update.");
+      return;
+    }
 
-      if (existingRecords.length > 0) {
-        // Update existing analytics entry
-        await db.runAsync(
-          `UPDATE video_analytics 
+    const videoLang = language ?? video?.language ?? "en";
+    const today = new Date().toISOString().split("T")[0];
+    const watchedTimestamp = options.watchedAt ?? new Date().toISOString();
+
+    console.log(
+      `Updating analytics with: userId=${userId}, videoId=${videoId}, language=${videoLang}, watchedTime=${watchedTime}s`
+    );
+
+    const existingRecords = await db.getAllAsync(
+      "SELECT * FROM video_analytics WHERE user_id = ? AND video_id = ? AND language = ? AND date = ?",
+      [userId, videoId, videoLang, today]
+    );
+
+    if (existingRecords.length > 0) {
+      await db.runAsync(
+        `UPDATE video_analytics 
            SET total_views_day = total_views_day + 1, 
                total_time_day = total_time_day + ?, 
                last_time_stamp = ? 
            WHERE user_id = ? AND video_id = ? AND language = ? AND date = ?`,
-          [watchedTime, lastWatchedTimestamp, userId, videoId, videoLang, today]
-        );
-        console.log(`Updated analytics for Video ${videoId}, Language: ${videoLang} with ${watchedTime}ms`);
-      } else {
-        // Insert a new entry
-        await db.runAsync(
-          `INSERT INTO video_analytics (user_id, video_id, date, total_views_day, total_time_day, last_time_stamp, language) 
+        [watchedTime, watchedTimestamp, userId, videoId, videoLang, today]
+      );
+      console.log(`Updated analytics for Video ${videoId}, Language: ${videoLang} with ${watchedTime}s`);
+    } else {
+      await db.runAsync(
+        `INSERT INTO video_analytics (user_id, video_id, date, total_views_day, total_time_day, last_time_stamp, language) 
            VALUES (?, ?, ?, 1, ?, ?, ?)`,
-          [userId, videoId, today, watchedTime, lastWatchedTimestamp, videoLang]
-        );
-        console.log(`Inserted new analytics for Video ${videoId}, Language: ${videoLang} with ${watchedTime}ms`);
-      }
-    } catch (error) {
-      console.error("Error updating video analytics:", error);
+        [userId, videoId, today, watchedTime, watchedTimestamp, videoLang]
+      );
+      console.log(`Inserted new analytics for Video ${videoId}, Language: ${videoLang} with ${watchedTime}s`);
     }
-  };
+
+    try {
+      await recordWatchSession(db, {
+        userId,
+        videoId,
+        language: videoLang,
+        watchTime: watchedTime,
+        videoDuration: options.videoDuration ?? Math.round(player?.duration ?? 0),
+        completed: options.completed ?? false,
+        watchedAt: watchedTimestamp,
+      });
+    } catch (sessionError) {
+      console.error("Error recording watch session:", sessionError);
+    }
+  } catch (error) {
+    console.error("Error updating video analytics:", error);
+  }
+};
   
   const returnBackToHome = async () => {
     // Calculate final watch time including current playing segment if video is still playing
@@ -150,7 +193,17 @@ export default function VideoScreen() {
     
     // Only update analytics if there's actual watch time
     if (finalWatchTime > 0) {
-      await updateVideoAnalytics(finalWatchTime);
+      const videoDurationSeconds = player?.duration ? Math.round(player.duration) : 0;
+      const watchedAt = new Date().toISOString();
+      const completionThreshold = videoDurationSeconds ? Math.max(videoDurationSeconds - 2, Math.ceil(videoDurationSeconds * 0.95)) : 0;
+      const completed =
+        videoDurationSeconds > 0 ? finalWatchTime >= completionThreshold : false;
+
+      await updateVideoAnalytics(finalWatchTime, {
+        videoDuration: videoDurationSeconds || finalWatchTime,
+        completed,
+        watchedAt,
+      });
     }
   
     if (player) {
@@ -161,9 +214,25 @@ export default function VideoScreen() {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.DEFAULT);
     }
     
-    router.back();
+    // Return to home page instead of just going back
+    router.replace("/(tabs)");
   };
   
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener("change", ({ window }) => {
+      setWindowDimensions(window);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const isLandscape = windowDimensions.width > windowDimensions.height;
+  const videoContainerStyle = isLandscape
+    ? styles.videoContainerLandscape
+    : styles.videoContainerPortrait;
+
   return (
     <View style={styles.fullscreenContainer}>
       <TouchableOpacity
@@ -173,11 +242,13 @@ export default function VideoScreen() {
         <Image className="w-8 h-8" source={back} />
       </TouchableOpacity>
 
-      <VideoView
-        style={styles.video}
-        player={player}
-        contentFit="cover"
-      />
+      <View style={[styles.videoContainer, videoContainerStyle]}>
+        <VideoView
+          style={styles.video}
+          player={player}
+          contentFit="cover"
+        />
+      </View>
     </View>
   );
 }
@@ -189,10 +260,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "black",
   },
+  videoContainer: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "black",
+  },
+  videoContainerPortrait: {
+    aspectRatio: 16 / 9,
+    width: "100%",
+    maxHeight: "100%",
+  },
+  videoContainerLandscape: {
+    flex: 1,
+    width: "100%",
+  },
   video: {
     width: "100%",
-    height: "110%",
-    resizeMode: "contain",
+    height: "100%",
+    backgroundColor: "black",
   },
   errorText: {
     fontSize: 18,
