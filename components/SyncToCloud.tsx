@@ -16,7 +16,6 @@ interface User {
 }
 
 interface VideoAnalytics {
-  id: number;
   name:string;
   video_id: number;
   english_title?: string;
@@ -172,9 +171,7 @@ const SyncToCloud = () => {
             : null;
 
           return {
-            // ----------------- THIS IS THE FIX -----------------
-            id: analytics.id, // We were missing this ID
-            // ---------------------------------------------------
+           
             user_id: user.id,
             name: user.user_name,
             video_id: analytics.video_id,
