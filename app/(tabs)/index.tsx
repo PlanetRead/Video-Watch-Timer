@@ -223,11 +223,10 @@ const VideoList = () => {
           arrowIconStyle={{ marginHorizontal: -5 }}
         />
         
-        {/*
-        THIS IS THE FIX:
-        Changed 'onLongPress' to 'onPress' and removed 'delayLongPress'
+        {/* REVERTED THIS CHANGE AS PER FEEDBACK
+        Changed 'onPress' back to 'onLongPress' and added delay
         */}
-        <TouchableOpacity className="w-[100px] h-[70px] flex-1" onPress={() => router.push(`/login`)}>
+        <TouchableOpacity className="w-[100px] h-[70px] flex-1" onLongPress={() => router.push(`/login`)} delayLongPress={5000}>
           <Image source={billion_readers} className="w-full h-full"
             style={{ resizeMode: "contain" }}
           />
