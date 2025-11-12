@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getVideoAnalyticsByUser, getUsers, deleteAllUserData, createUser, editUserName } from "../database/database";
 import { useSQLiteContext } from "expo-sqlite";
@@ -14,9 +14,9 @@ import { Dimensions } from "react-native";
 import { videoDetails } from "../../assets/details";
 import DropDownPicker from "react-native-dropdown-picker";
 import { Ionicons } from "@expo/vector-icons";
-import PieChart from "react-native-pie-chart";
+import PieChart from "react-native-pie-chart"; 
 import { StyleSheet } from "react-native";
-import SyncToCloud from "@/components/SyncToCloud";
+// SyncToCloud removed - automatic sync handled in background
 import * as FileSystem from 'expo-file-system';
 import Papa from 'papaparse';
 import * as Sharing from 'expo-sharing';
@@ -415,22 +415,16 @@ const AnalyticsDashboard = () => {
         <Text className="text-white text-center font-bold">EXPORT</Text>
       </TouchableOpacity>
 
-        <View className="flex-row justify-between my-2 space-x-2 gap-2">
-        {/* SyncToCloud component taking half width */}
-        <View className="flex-1">
-          <SyncToCloud />
+        {/* Sync button completely removed - automatic sync only */}
+        <View className="w-full my-2">
+          {/* Delete button only */}
+          <TouchableOpacity 
+            className="bg-[#ECE6F0] p-3 w-full" 
+            onPress={() => setDeleteModalVisible(true)}
+          >
+            <Text className="text-red-500 text-center font-bold">DELETE USER DATA</Text>
+          </TouchableOpacity>
         </View>
-        
-        {/* Delete button taking half width */}
-        <View className="flex-1">
-        <TouchableOpacity 
-          className="bg-[#ECE6F0] p-3 w-full" 
-          onPress={() => setDeleteModalVisible(true)}
-        >
-          <Text className="text-red-500 text-center font-bold">DELETE USER DATA</Text>
-        </TouchableOpacity>
-        </View>
-      </View>
 
 
         {/* Level, Language and Date Dropdowns */}

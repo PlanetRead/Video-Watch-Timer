@@ -29,7 +29,8 @@
     "plugins": [
       "expo-router",
       [
-        "expo-splash-screen",{
+        "expo-splash-screen",
+        {
           "backgroundColor": "#FFFFFF",
           "resizeMode": "contain",
           "image": "./assets/images/bird-logo.png",
@@ -64,7 +65,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "035efa62-7a9a-42a2-bf65-aee321fba071"
+        "projectId": "0a89ff9f-141b-4259-a757-6b6c1e8d398c"
       }
     }
   }
