@@ -10,9 +10,10 @@ import {
 import React, { useEffect, useRef } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/SupabaseConfig";
-import { getUsers, getVideoAnalyticsByUser } from "@/app/database/database";
+import { getUsers, getVideoAnalyticsByUser, getAllVideos, getVideoById } from "@/app/database/database";
 import { useSQLiteContext } from "expo-sqlite";
 import { useState } from "react";
+import { videoDetails } from "@/assets/details";
 
 interface User {
   id: string;
@@ -77,15 +78,41 @@ const SyncToCloud = () => {
 
     try {
       const users: User[] = await getUsers(db); // Fetch all users
+      const allVideos = await getAllVideos(db); // Fetch all uploaded videos
 
-      // Fetch video analytics for each user
+      // Fetch video analytics for each user and enrich with titles
       for (const user of users) {
         const videoAnalytics: VideoAnalytics[] = await getVideoAnalyticsByUser(
           db,
           user.id
         );
-        // For uploaded videos, we don't need to merge with videoDetails
-        // Just use the analytics data as is
+        
+        // Enrich analytics with titles from videos table or videoDetails
+        for (const analytics of videoAnalytics) {
+          // Try to find title from uploaded videos table first
+          const uploadedVideo = allVideos.find(v => v.id === analytics.video_id);
+          
+          if (uploadedVideo) {
+            // For uploaded videos, use the title as english_title
+            analytics.english_title = uploadedVideo.title;
+            analytics.punjabi_title = uploadedVideo.title; // Use same title for both if no translation
+            analytics.level = uploadedVideo.level || "1";
+          } else {
+            // For predefined videos, look up from videoDetails
+            const videoDetail = videoDetails.find(v => v.id === analytics.video_id.toString());
+            if (videoDetail) {
+              analytics.english_title = videoDetail.english_title?.trim() || "Unknown Title";
+              analytics.punjabi_title = videoDetail.punjabi_title?.trim() || "Unknown Title";
+              analytics.level = videoDetail.level || "1";
+            } else {
+              // Fallback: provide default values to prevent null constraint violation
+              analytics.english_title = `Video ${analytics.video_id}`;
+              analytics.punjabi_title = `Video ${analytics.video_id}`;
+              analytics.level = analytics.level || "1";
+            }
+          }
+        }
+        
         user.video_analytics = videoAnalytics;
       }
 
@@ -125,6 +152,7 @@ const SyncToCloud = () => {
         });
 
         if (userError) {
+          console.error("Supabase user upsert error:", userError);
           return {
             success: false,
             error: `Error syncing data: ${userError.message}`,
@@ -146,21 +174,22 @@ const SyncToCloud = () => {
                     user_id: user.id,
                     name:user.user_name,
                     video_id: analytics.video_id,
-                    english_title: analytics.english_title,
-                    punjabi_title: analytics.punjabi_title,
-                    level: analytics.level,
+                    english_title: analytics.english_title || `Video ${analytics.video_id}`,
+                    punjabi_title: analytics.punjabi_title || `Video ${analytics.video_id}`,
+                    level: analytics.level || "1",
                     date: analytics.date,
                     total_views_day: analytics.total_views_day,
                     total_time_day: analytics.total_time_day,
                     last_time_stamp: lastTimestamp,
                     language: analytics.language,
-                    }
+                  }
                 ],
                 {
                   onConflict: 'user_id,video_id,date,language',
               });
 
             if (analyticsError) {
+              console.error("Supabase analytics upsert error:", analyticsError);
               return {
                 success: false,
                 error: `Error syncing analytics for video ${analytics.video_id}: ${analyticsError.message}`,
@@ -212,11 +241,12 @@ const SyncToCloud = () => {
         return false;
       }
 
+      const healthEndpoint = `${supabaseUrl.replace(/\/$/, "")}/rest/v1/health`;
       const controllerSupabase = new AbortController();
-      const timeoutSupabase = setTimeout(() => controllerSupabase.abort(), 5000);
+      const timeoutSupabase = setTimeout(() => controllerSupabase.abort(), 8000);
 
       try {
-        const response = await fetch(`${supabaseUrl}/rest/v1/`, {
+        const response = await fetch(healthEndpoint, {
           method: "GET",
           cache: "no-store",
           signal: controllerSupabase.signal,
@@ -227,7 +257,17 @@ const SyncToCloud = () => {
         });
 
         clearTimeout(timeoutSupabase);
-        return response.ok;
+
+        if (!response.ok) {
+          const body = await response.text();
+          console.warn("Supabase health check responded with non-200 status", {
+            status: response.status,
+            body,
+          });
+          return false;
+        }
+
+        return true;
       } catch (error) {
         clearTimeout(timeoutSupabase);
         console.warn("Supabase connectivity check failed:", error);
@@ -260,14 +300,41 @@ const SyncToCloud = () => {
 
     try {
       const users: User[] = await getUsers(db);
+      const allVideos = await getAllVideos(db); // Fetch all uploaded videos
 
-      // Fetch video analytics for each user
+      // Fetch video analytics for each user and enrich with titles
       for (const user of users) {
         const videoAnalytics: VideoAnalytics[] = await getVideoAnalyticsByUser(
           db,
           user.id
         );
-        // For uploaded videos, we don't need to merge with videoDetails
+        
+        // Enrich analytics with titles from videos table or videoDetails
+        for (const analytics of videoAnalytics) {
+          // Try to find title from uploaded videos table first
+          const uploadedVideo = allVideos.find(v => v.id === analytics.video_id);
+          
+          if (uploadedVideo) {
+            // For uploaded videos, use the title as english_title
+            analytics.english_title = uploadedVideo.title;
+            analytics.punjabi_title = uploadedVideo.title; // Use same title for both if no translation
+            analytics.level = uploadedVideo.level || "1";
+          } else {
+            // For predefined videos, look up from videoDetails
+            const videoDetail = videoDetails.find(v => v.id === analytics.video_id.toString());
+            if (videoDetail) {
+              analytics.english_title = videoDetail.english_title?.trim() || "Unknown Title";
+              analytics.punjabi_title = videoDetail.punjabi_title?.trim() || "Unknown Title";
+              analytics.level = videoDetail.level || "1";
+            } else {
+              // Fallback: provide default values to prevent null constraint violation
+              analytics.english_title = `Video ${analytics.video_id}`;
+              analytics.punjabi_title = `Video ${analytics.video_id}`;
+              analytics.level = analytics.level || "1";
+            }
+          }
+        }
+        
         user.video_analytics = videoAnalytics;
       }
 
@@ -296,31 +363,46 @@ const SyncToCloud = () => {
   useEffect(() => {
     if (!autoSyncEnabled || !db) return;
 
+    let interval: NodeJS.Timeout | null = null;
+    let subscription: any = null;
+
     const checkAndSync = async () => {
-      const isOnline = await checkNetworkConnectivity();
-      if (isOnline && !isSyncingRef.current) {
-        await autoSync(true);
+      if (!autoSyncEnabled || !db) return;
+      
+      try {
+        const isOnline = await checkNetworkConnectivity();
+        if (isOnline && !isSyncingRef.current) {
+          await autoSync(true);
+        }
+      } catch (error) {
+        console.error("Error in checkAndSync:", error);
       }
     };
 
-    // Check immediately
-    checkAndSync();
+    // Check immediately with a small delay to ensure db is ready
+    const initialTimeout = setTimeout(() => {
+      checkAndSync();
+    }, 1000);
 
     // Check periodically (every 2 minutes)
-    const interval = setInterval(checkAndSync, 120000);
+    interval = setInterval(checkAndSync, 120000);
 
     // Check when app comes to foreground
-    const subscription = AppState.addEventListener("change", (nextAppState: AppStateStatus) => {
-      if (nextAppState === "active") {
-        checkAndSync();
+    subscription = AppState.addEventListener("change", (nextAppState: AppStateStatus) => {
+      if (nextAppState === "active" && autoSyncEnabled) {
+        // Add a small delay when app becomes active
+        setTimeout(() => {
+          checkAndSync();
+        }, 500);
       }
     });
 
     return () => {
-      clearInterval(interval);
-      subscription.remove();
+      clearTimeout(initialTimeout);
+      if (interval) clearInterval(interval);
+      if (subscription) subscription.remove();
     };
-  }, [autoSyncEnabled, db]);
+  }, [autoSyncEnabled]);
 
   return (
     <View>

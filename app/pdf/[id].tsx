@@ -55,28 +55,31 @@ const PdfViewer = () => {
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f2f2f2' }}>
+    <View style={{ flex: 1, backgroundColor: '#6B21A8' }}>
       {/* Header with Back Button and Title */}
-      <View className="flex-row items-center justify-start p-2 bg-white shadow-2xl pt-12 elevation-lg">
-  {/* <TouchableOpacity onPress={() => router.push("/")} className="p-2">
-    <Image 
-      source={back} 
-      className="w-6 h-6" 
-      resizeMode="contain" 
-    />
-  </TouchableOpacity> */}
-  <Text className="text-lg font-bold text-black ml-2">
-    {title || 'PDF Viewer'}
-  </Text>
-</View>
+      <View className="flex-row items-center justify-start p-3 bg-purple-800 pt-12 shadow-2xl elevation-lg">
+        <TouchableOpacity onPress={() => router.back()} className="p-2 mr-2">
+          <Image 
+            source={back} 
+            className="w-6 h-6" 
+            resizeMode="contain" 
+          />
+        </TouchableOpacity>
+        <Text className="text-lg font-bold text-white ml-1">
+          {title || 'PDF Viewer'}
+        </Text>
+      </View>
 
 
       {loading ? (
-        <ActivityIndicator size="large" color="blue" style={{ flex: 1 }} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={{ marginTop: 8, color: '#E5E5E5' }}>Loading PDF...</Text>
+        </View>
       ) : pdfUri ? (
         <Pdf
           source={{ uri: pdfUri }}
-          style={{ flex: 1 }}
+          style={{ flex: 1, backgroundColor: '#111827' }}
           enablePaging={true}
           onLoadComplete={(numberOfPages) =>
             console.log(`📄 PDF Loaded with ${numberOfPages} pages`)
@@ -84,7 +87,9 @@ const PdfViewer = () => {
           onError={(error) => console.log("❌ Error loading PDF:", error)}
         />
       ) : (
-        <View />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: '#FCA5A5' }}>PDF not available.</Text>
+        </View>
       )}
     </View>
   );

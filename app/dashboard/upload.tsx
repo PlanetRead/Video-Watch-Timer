@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   FlatList,
 } from "react-native";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
@@ -20,10 +20,45 @@ import {
   type Video,
 } from "../database/database";
 import * as FileSystem from "expo-file-system";
+import * as VideoThumbnails from "expo-video-thumbnails";
 import DropDownPicker from "react-native-dropdown-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { BackHandler } from "react-native";
 import { requestMediaLibraryPermissions, requestCameraPermissions, checkMediaLibraryPermissions } from "@/utils/permissions";
+import { getTitleItems } from "@/config/videoTitles";
+
+// Separate component for manual title input using fully uncontrolled pattern
+// This prevents ANY re-renders from causing focus loss
+const ManualTitleInput = React.memo(({ 
+  onChangeText, 
+  inputRef 
+}: { 
+  onChangeText: (text: string) => void; 
+  inputRef: React.RefObject<TextInput> 
+}) => {
+  const handleChange = React.useCallback((text: string) => {
+    // Update parent without causing re-renders
+    onChangeText(text);
+  }, [onChangeText]);
+
+  return (
+    <View className="mt-3" collapsable={false}>
+      <TextInput
+        ref={inputRef}
+        placeholder="Enter video title manually"
+        onChangeText={handleChange}
+        className="border border-gray-300 rounded-lg p-3 bg-white"
+        blurOnSubmit={false}
+        editable={true}
+        selectTextOnFocus={false}
+        keyboardType="default"
+        returnKeyType="done"
+      />
+    </View>
+  );
+}, () => true); // Never re-render this component - always return true (props are equal)
 
 const UploadVideo = () => {
   const db = useSQLiteContext();
@@ -60,6 +95,7 @@ const UploadVideo = () => {
   const [languageItems] = useState([
     { label: "English", value: "en" },
     { label: "Hindi", value: "hi" },
+    { label: "Punjabi", value: "pa" },
   ]);
 
   // Level dropdown
@@ -71,6 +107,42 @@ const UploadVideo = () => {
     { label: "Level 3", value: "3" },
     { label: "Level 4", value: "4" },
   ]);
+
+  // Title dropdown - updates based on language
+  const [titleOpen, setTitleOpen] = useState(false);
+  const [titleItems, setTitleItems] = useState(() => getTitleItems(language as "en" | "hi" | "pa"));
+  const [showManualTitleInput, setShowManualTitleInput] = useState(false);
+  const [manualTitle, setManualTitle] = useState("");
+  const manualTitleInputRef = useRef<TextInput>(null);
+  const manualTitleValueRef = useRef<string>(""); // Store value in ref to prevent re-renders
+  
+  // Get "Other" label based on language
+  const getOtherLabel = (lang: "en" | "hi" | "pa") => {
+    if (lang === "hi") return "अन्य";
+    if (lang === "pa") return "ਹੋਰ";
+    return "Other";
+  };
+  
+  // Update title items when language changes
+  useEffect(() => {
+    const items = getTitleItems(language as "en" | "hi" | "pa");
+    // Add "Other" option at the end
+    const otherLabel = getOtherLabel(language as "en" | "hi" | "pa");
+    items.push({ label: otherLabel, value: "__OTHER__" });
+    setTitleItems(items);
+    // Reset title and manual input when language changes
+    setTitle("");
+    setManualTitle("");
+    setShowManualTitleInput(false);
+  }, [language]);
+
+  // Memoize onChangeText handler - store in ref to prevent re-renders, update state only when needed
+  const handleManualTitleChange = useCallback((text: string) => {
+    manualTitleValueRef.current = text;
+    // Don't update state immediately to prevent re-renders
+    // Only update state when user finishes typing (debounced) or on blur
+    setManualTitle(text);
+  }, []);
 
   const pickVideo = async () => {
     try {
@@ -99,6 +171,47 @@ const UploadVideo = () => {
         }
         
         setVideoUri(asset.uri);
+        
+        // Automatically generate thumbnail from 1 second into the video
+        try {
+          // Get thumbnail from 1 second (1000ms) into the video
+          let thumbnail = null;
+          
+          try {
+            thumbnail = await VideoThumbnails.getThumbnailAsync(asset.uri, {
+              time: 1000, // 1 second into the video
+              quality: 0.9, // Higher quality for better thumbnail
+            });
+            
+            if (thumbnail && thumbnail.uri) {
+              // Verify thumbnail exists
+              const thumbInfo = await FileSystem.getInfoAsync(thumbnail.uri);
+              if (thumbInfo.exists) {
+                setThumbnailUri(thumbnail.uri);
+              }
+            }
+          } catch (timeError) {
+            // If 1 second fails, try first frame (0ms) as fallback
+            try {
+              thumbnail = await VideoThumbnails.getThumbnailAsync(asset.uri, {
+                time: 0, // First frame as fallback
+                quality: 0.9,
+              });
+              
+              if (thumbnail && thumbnail.uri) {
+                const thumbInfo = await FileSystem.getInfoAsync(thumbnail.uri);
+                if (thumbInfo.exists) {
+                  setThumbnailUri(thumbnail.uri);
+                }
+              }
+            } catch (fallbackError) {
+              console.warn("Failed to generate thumbnail from video:", fallbackError);
+            }
+          }
+        } catch (thumbError) {
+          console.warn("Failed to generate thumbnail from video:", thumbError);
+          // Don't show error to user, just continue without auto-thumbnail
+        }
       }
     } catch (error) {
       console.error("Error picking video:", error);
@@ -385,7 +498,22 @@ const UploadVideo = () => {
   }, [loadVideos]);
 
   const handleUpload = async () => {
-    if (!title.trim()) {
+    // Check if title is valid
+    if (!title.trim() || title === "__OTHER__") {
+      if (title === "__OTHER__" && !manualTitle.trim()) {
+        Alert.alert("Error", "Please enter a video title manually");
+        return;
+      }
+      if (!title.trim()) {
+        Alert.alert("Error", "Please enter a video title");
+        return;
+      }
+    }
+    
+    // Use manual title if "Other" was selected
+    const finalTitle = title === "__OTHER__" ? manualTitle.trim() : title.trim();
+    
+    if (!finalTitle) {
       Alert.alert("Error", "Please enter a video title");
       return;
     }
@@ -452,7 +580,7 @@ const UploadVideo = () => {
       // Create video record in database
       const videoDbId = await createVideo(
         db,
-        title.trim(),
+        finalTitle,
         description.trim() || "",
         savedThumbnailUri || "",
         savedVideoUri,
@@ -472,6 +600,11 @@ const UploadVideo = () => {
               setThumbnailUri(null);
               setLanguage("en");
               setLevel("1");
+              setTitleOpen(false);
+              setLanguageOpen(false);
+              setLevelOpen(false);
+              setManualTitle("");
+              setShowManualTitleInput(false);
               // Navigate back to home or refresh
               loadVideos();
             },
@@ -548,19 +681,30 @@ const UploadVideo = () => {
     </View>
   );
 
-  const renderHeader = () => (
+  const renderHeader = useCallback(() => (
     <View>
+      {/* Back Button */}
+      <TouchableOpacity
+        className="bg-purple-700 p-3 rounded-lg mb-4"
+        onPress={() => router.replace("/(tabs)")}
+      >
+        <View className="flex-row items-center justify-center gap-2">
+          <Ionicons name="arrow-back" size={20} color="white" />
+          <Text className="text-white text-center font-bold">Back to Home</Text>
+        </View>
+      </TouchableOpacity>
+      
       {/* Navigation Tabs */}
       <View className="flex-row gap-2 mb-4">
         <TouchableOpacity
           className="flex-1 bg-gray-200 p-3 rounded-lg"
-          onPress={() => router.push("/dashboard")}
+          onPress={() => router.replace("/dashboard")}
         >
           <Text className="text-purple-700 text-center font-bold">Analytics</Text>
         </TouchableOpacity>
         <TouchableOpacity
           className="flex-1 bg-purple-700 p-3 rounded-lg"
-          onPress={() => router.push("/dashboard/upload")}
+          onPress={() => router.replace("/dashboard/upload")}
         >
           <Text className="text-white text-center font-bold">Upload Video</Text>
         </TouchableOpacity>
@@ -593,14 +737,98 @@ const UploadVideo = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Language and Level Dropdowns */}
+      <View className="flex-row gap-4 mb-4">
+        <View className="flex-1" style={{ zIndex: languageOpen ? 3000 : 1 }}>
+          <Text className="text-black text-base font-bold mb-2">Language</Text>
+          <DropDownPicker
+            open={languageOpen}
+            value={language}
+            items={languageItems}
+            setOpen={(val) => {
+              setLanguageOpen(val);
+              if (levelOpen) setLevelOpen(false);
+              if (titleOpen) setTitleOpen(false);
+            }}
+            setValue={setLanguage}
+            placeholder="Select language"
+            containerStyle={{ minHeight: 40 }}
+            zIndex={languageOpen ? 3000 : 1}
+            zIndexInverse={1000}
+          />
+        </View>
+
+        <View className="flex-1" style={{ zIndex: levelOpen ? 2000 : 1 }}>
+          <Text className="text-black text-base font-bold mb-2">Level</Text>
+          <DropDownPicker
+            open={levelOpen}
+            value={level}
+            items={levelItems}
+            setOpen={(val) => {
+              setLevelOpen(val);
+              if (languageOpen) setLanguageOpen(false);
+              if (titleOpen) setTitleOpen(false);
+            }}
+            setValue={setLevel}
+            placeholder="Select level"
+            containerStyle={{ minHeight: 40 }}
+            zIndex={levelOpen ? 2000 : 1}
+            zIndexInverse={1000}
+          />
+        </View>
+      </View>
+
       {/* Video Title */}
-      <View className="mb-4">
+      <View className="mb-4" style={{ zIndex: titleOpen ? 4000 : 1 }}>
         <Text className="text-black text-base font-bold mb-2">Video Title</Text>
-        <TextInput
-          placeholder="Enter video title"
-          value={title}
-          onChangeText={setTitle}
-          className="border border-gray-300 rounded-lg p-3 bg-white"
+        <DropDownPicker
+          open={titleOpen}
+          value={showManualTitleInput ? "__OTHER__" : title}
+          items={titleItems}
+          setOpen={(val) => {
+            setTitleOpen(val);
+            if (languageOpen) setLanguageOpen(false);
+            if (levelOpen) setLevelOpen(false);
+          }}
+          setValue={(value: string | ((prev: string) => string)) => {
+            // Handle both string value and callback function
+            const actualValue = typeof value === "function" ? value(title) : value;
+            if (actualValue === "__OTHER__") {
+              setShowManualTitleInput(true);
+              setTitle("__OTHER__");
+              // Focus the input after a delay to ensure it's rendered
+              setTimeout(() => {
+                if (manualTitleInputRef.current) {
+                  manualTitleInputRef.current.focus();
+                }
+              }, 300);
+            } else {
+              setShowManualTitleInput(false);
+              setTitle(actualValue);
+              setManualTitle(""); // Clear manual title when selecting from dropdown
+            }
+          }}
+          placeholder="Select video title"
+          searchable={true}
+          searchPlaceholder="Search titles..."
+          containerStyle={{ minHeight: 40 }}
+          listMode="MODAL"
+          modalTitle="Select Video Title"
+          modalAnimationType="slide"
+          modalContentContainerStyle={{ 
+            backgroundColor: "white",
+            padding: 20,
+          }}
+          modalProps={{
+            animationType: "slide",
+            transparent: false,
+          }}
+          maxHeight={600}
+          zIndex={titleOpen ? 4000 : 1}
+          zIndexInverse={1000}
+          style={{
+            backgroundColor: "#fafafa",
+          }}
         />
       </View>
 
@@ -653,41 +881,6 @@ const UploadVideo = () => {
         )}
       </View>
 
-      {/* Language and Level Dropdowns */}
-      <View className="flex-row gap-4 mb-4">
-        <View className="flex-1">
-          <Text className="text-black text-base font-bold mb-2">Language</Text>
-          <DropDownPicker
-            open={languageOpen}
-            value={language}
-            items={languageItems}
-            setOpen={(val) => {
-              setLanguageOpen(val);
-              if (levelOpen) setLevelOpen(false);
-            }}
-            setValue={setLanguage}
-            placeholder="Select language"
-            containerStyle={{ minHeight: 40 }}
-          />
-        </View>
-
-        <View className="flex-1">
-          <Text className="text-black text-base font-bold mb-2">Level</Text>
-          <DropDownPicker
-            open={levelOpen}
-            value={level}
-            items={levelItems}
-            setOpen={(val) => {
-              setLevelOpen(val);
-              if (languageOpen) setLanguageOpen(false);
-            }}
-            setValue={setLevel}
-            placeholder="Select level"
-            containerStyle={{ minHeight: 40 }}
-          />
-        </View>
-      </View>
-
       {/* Upload Button */}
       <TouchableOpacity
         onPress={handleUpload}
@@ -708,10 +901,47 @@ const UploadVideo = () => {
         <Text className="text-black text-2xl font-black">Uploaded Videos</Text>
       </View>
     </View>
+  ), [title, language, level, videoUri, thumbnailUri, description, titleOpen, languageOpen, levelOpen, titleItems, showManualTitleInput, uploading, pickVideo, pickThumbnail, takePhoto, handleUpload, router, handleManualTitleChange]);
+
+  // Handle back button to go back to home page
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        // Navigate to home page instead of going back in history
+        router.replace("/(tabs)");
+        return true; // Prevent default back behavior
+      };
+
+      const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () => backHandler.remove();
+    }, [router])
   );
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-white">
+      {/* Manual title input rendered outside FlatList - always mounted to prevent focus loss */}
+      <View 
+        style={{ 
+          paddingHorizontal: showManualTitleInput ? 16 : 0, 
+          paddingTop: showManualTitleInput ? 16 : 0, 
+          paddingBottom: showManualTitleInput ? 8 : 0, 
+          backgroundColor: 'white',
+          height: showManualTitleInput ? undefined : 0,
+          overflow: 'hidden'
+        }} 
+        pointerEvents={showManualTitleInput ? 'auto' : 'none'}
+        collapsable={false}
+      >
+        {showManualTitleInput && (
+          <>
+            <Text className="text-black text-base font-bold mb-2">Enter Video Title</Text>
+            <ManualTitleInput
+              onChangeText={handleManualTitleChange}
+              inputRef={manualTitleInputRef}
+            />
+          </>
+        )}
+      </View>
       <FlatList
         data={videos}
         keyExtractor={(item) => item.id.toString()}
@@ -719,6 +949,10 @@ const UploadVideo = () => {
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyComponent}
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        scrollEnabled={!titleOpen && !languageOpen && !levelOpen}
+        keyboardShouldPersistTaps="handled"
+        removeClippedSubviews={false}
+        keyboardDismissMode="none"
       />
     </SafeAreaView>
   );

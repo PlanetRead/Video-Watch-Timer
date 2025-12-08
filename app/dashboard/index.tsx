@@ -5,6 +5,7 @@ import {
   Image,
   TouchableOpacity,
   TextInput,
+  ScrollView,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,8 +22,9 @@ import Papa from 'papaparse';
 import * as Sharing from 'expo-sharing';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { Modal } from "react-native";
+import { Modal, BackHandler } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 
@@ -38,11 +40,13 @@ type AnalyticsData = {
   user_id?: string;
   pdf_en?: string;
   pdf_hindi?: string;
+  pdf_punjabi?: string;
   description?: string;
   english_title?: string;
   punjabi_title?: string;
   thumbnail_en?: any;
   thumbnail_hindi?: any;
+  thumbnail_punjabi?: any;
   level?: string;
   video_duration?: number;
   completed?: boolean;
@@ -209,6 +213,7 @@ const AnalyticsDashboard = () => {
                 level: dbVideo.level || "1",
                 thumbnail_en: dbVideo.thumbnail_uri ? { uri: dbVideo.thumbnail_uri } : null,
                 thumbnail_hindi: dbVideo.thumbnail_uri ? { uri: dbVideo.thumbnail_uri } : null,
+                thumbnail_punjabi: dbVideo.thumbnail_uri ? { uri: dbVideo.thumbnail_uri } : null,
                 isSessionEntry: false,
               };
             }
@@ -242,6 +247,7 @@ const AnalyticsDashboard = () => {
               level: dbVideo?.level || "1",
               thumbnail_en: dbVideo?.thumbnail_uri ? { uri: dbVideo.thumbnail_uri } : null,
               thumbnail_hindi: dbVideo?.thumbnail_uri ? { uri: dbVideo.thumbnail_uri } : null,
+              thumbnail_punjabi: dbVideo?.thumbnail_uri ? { uri: dbVideo.thumbnail_uri } : null,
               video_duration: session.video_duration ?? 0,
               completed: !!session.completed,
               isSessionEntry: true,
@@ -290,13 +296,14 @@ const AnalyticsDashboard = () => {
     { label: "Level 4", value: "4" },
   ]);
 
-    // Level Dropdown State
+    // Language Dropdown State
     const [languageOpen, setLanguageOpen] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState("All Lang");
     const [languageItems] = useState([
       { label: "All Lang", value: "All Lang" },
       { label: "English", value: "en" },
       { label: "Hindi", value: "hi" },
+      { label: "Punjabi", value: "pa" },
     ]);
 
   // Sort Dropdown State
@@ -308,6 +315,23 @@ const AnalyticsDashboard = () => {
     { label: "Max Watched", value: "max_watch_time" },
     { label: "Min Watched", value: "min_watch_time" },
   ]);
+
+  const [filteredData, setFilteredData] = useState<AnalyticsData[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Handle back button to go back to home page - MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        // Navigate to home page instead of going back in history
+        router.replace("/(tabs)");
+        return true; // Prevent default back behavior
+      };
+
+      const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () => backHandler.remove();
+    }, [router])
+  );
 
   function sortDataByLastTimeStamp(data: any[]) {
     // Create a copy to avoid mutating the original array
@@ -349,9 +373,6 @@ const AnalyticsDashboard = () => {
       return sortedData;
     });
   }, [sortoption]);
-
-  const [filteredData, setFilteredData] = useState<AnalyticsData[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     console.log("AnalyticsDashboard Mounted");
@@ -460,7 +481,7 @@ const AnalyticsDashboard = () => {
     alert("Exporting data to CSV");
 
     // Convert JSON data to CSV
-    const csvData = filteredData.map(({pdf_en, pdf_hindi, thumbnail_en, thumbnail_hindi, description, ...rest}) => ({ ...rest,username}));
+    const csvData = filteredData.map(({pdf_en, pdf_hindi, pdf_punjabi, thumbnail_en, thumbnail_hindi, thumbnail_punjabi, description, ...rest}) => ({ ...rest,username}));
     const csvContent = Papa.unparse(csvData);
 
     // Define file path
@@ -509,10 +530,10 @@ const AnalyticsDashboard = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }} className="bg-white p-4">
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
-          <Text style={{ color: '#000000', fontSize: 18, fontWeight: 'bold' }}>Loading Dashboard...</Text>
-          <Text style={{ color: '#666', fontSize: 14, marginTop: 8 }}>Please wait...</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#6B21A8' }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' }}>Loading Dashboard...</Text>
+          <Text style={{ color: '#E5E5E5', fontSize: 14, marginTop: 8 }}>Please wait...</Text>
         </View>
       </SafeAreaView>
     );
@@ -520,12 +541,12 @@ const AnalyticsDashboard = () => {
 
   if (error) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }} className="bg-white p-4">
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', padding: 20 }}>
-          <Text style={{ color: '#dc2626', fontSize: 18, marginBottom: 8, fontWeight: 'bold', textAlign: 'center' }}>Error: {error}</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#6B21A8' }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <Text style={{ color: '#FCA5A5', fontSize: 18, marginBottom: 8, fontWeight: 'bold', textAlign: 'center' }}>Error: {error}</Text>
           {db && (
             <TouchableOpacity
-              className="bg-purple-700 px-4 py-2 rounded"
+              className="bg-white px-4 py-2 rounded"
               onPress={() => {
                 setError(null);
                 setLoading(true);
@@ -545,7 +566,7 @@ const AnalyticsDashboard = () => {
                 fetchUserDetails();
               }}
             >
-              <Text className="text-white">Retry</Text>
+              <Text className="text-purple-700 font-bold">Retry</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -555,12 +576,12 @@ const AnalyticsDashboard = () => {
   
   if (!db || !router) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#6B21A8' }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <Text style={{ color: '#dc2626', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+          <Text style={{ color: '#FCA5A5', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
             Initialization Error
           </Text>
-          <Text style={{ color: '#666', fontSize: 16, textAlign: 'center' }}>
+          <Text style={{ color: '#E5E5E5', fontSize: 16, textAlign: 'center' }}>
             Database or router not available. Please restart the app.
           </Text>
         </View>
@@ -571,20 +592,35 @@ const AnalyticsDashboard = () => {
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: '#ffffff' }}
-      className="bg-white p-4"
+      className="bg-white"
     >
-      <View style={{ flex: 1 }}>
+      <ScrollView 
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        showsVerticalScrollIndicator={true}
+      >
         {/* Navigation Tabs */}
+        {/* Back Button */}
+        <TouchableOpacity
+          className="bg-purple-700 p-3 rounded-lg mb-4"
+          onPress={() => router.replace("/(tabs)")}
+        >
+          <View className="flex-row items-center justify-center gap-2">
+            <Ionicons name="arrow-back" size={20} color="white" />
+            <Text className="text-white text-center font-bold">Back to Home</Text>
+          </View>
+        </TouchableOpacity>
+        
         <View className="flex-row gap-2 mb-4">
           <TouchableOpacity
             className="flex-1 bg-purple-700 p-3 rounded-lg"
-            onPress={() => router.push("/dashboard")}
+            onPress={() => router.replace("/dashboard")}
           >
             <Text className="text-white text-center font-bold">Analytics</Text>
           </TouchableOpacity>
           <TouchableOpacity
             className="flex-1 bg-gray-200 p-3 rounded-lg"
-            onPress={() => router.push("/dashboard/upload")}
+            onPress={() => router.replace("/dashboard/upload")}
           >
             <Text className="text-purple-700 text-center font-bold">Upload Video</Text>
           </TouchableOpacity>
@@ -892,16 +928,16 @@ const AnalyticsDashboard = () => {
           </View>
         </View>
 
-        <FlatList
-          data={filteredData}
-          keyExtractor={(_, index) => index.toString()}
-          renderItem={({ item }) => {
-            const thumbnailSource = item.language === "en"
-              ? item.thumbnail_en
-              : item.thumbnail_hindi;
-            
-            return (
-            <View className="flex-row justify-between border-b border-white py-2">
+        {/* Videos List - rendered as regular Views instead of FlatList */}
+        {filteredData.map((item, index) => {
+          const thumbnailSource = item.language === "en"
+            ? item.thumbnail_en
+            : item.language === "hi"
+            ? item.thumbnail_hindi
+            : item.thumbnail_punjabi;
+          
+          return (
+            <View key={index.toString()} className="flex-row justify-between border-b border-white py-2">
               <View className="flex flex-row items-center justify-between border-b-[1px] border-gray-300 h-fit min-h-[130px]">
                 {thumbnailSource ? (
                   <Image
@@ -959,11 +995,10 @@ const AnalyticsDashboard = () => {
                 </View>
               </View>
             </View>
-            );
-          }}
-        />
+          );
+        })}
         
-      </View>
+      </ScrollView>
       <Modal
   animationType="slide"
   transparent={true}
