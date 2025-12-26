@@ -39,6 +39,7 @@ export const initializeDatabase = async (db: SQLiteDatabase) => {
           video_uri TEXT NOT NULL,
           language TEXT NOT NULL,
           level TEXT NOT NULL,
+          source TEXT NOT NULL DEFAULT 'bookbox',
           created_at TEXT DEFAULT (datetime('now'))
         );
 
@@ -200,6 +201,7 @@ export const editUserName = async (db: SQLiteDatabase, userId: string, newUserNa
     video_uri: string;
     language: string;
     level: string;
+    source?: string; // 'bookbox' or 'stardost', defaults to 'bookbox'
     created_at: string;
   }
 
@@ -220,12 +222,26 @@ export const editUserName = async (db: SQLiteDatabase, userId: string, newUserNa
     thumbnail_uri: string,
     video_uri: string,
     language: string,
-    level: string
+    level: string,
+    source: string = 'bookbox'
   ): Promise<number | null> => {
     try {
+      // First, ensure source column exists (migration)
+      try {
+        const tableInfo = await db.getAllAsync("PRAGMA table_info(videos)");
+        const hasSourceColumn = tableInfo.some((col: any) => col.name === 'source');
+        if (!hasSourceColumn) {
+          await db.runAsync("ALTER TABLE videos ADD COLUMN source TEXT NOT NULL DEFAULT 'bookbox'");
+          console.log('Added source column to videos table');
+        }
+      } catch (migrationError) {
+        // Column might already exist, or table might not exist yet, ignore
+        console.log('Migration check:', migrationError);
+      }
+
       const result = await db.runAsync(
-        'INSERT INTO videos (title, description, thumbnail_uri, video_uri, language, level) VALUES (?, ?, ?, ?, ?, ?)',
-        [title, description, thumbnail_uri, video_uri, language, level]
+        'INSERT INTO videos (title, description, thumbnail_uri, video_uri, language, level, source) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [title, description, thumbnail_uri, video_uri, language, level, source]
       );
       return result.lastInsertRowId;
     } catch (error) {

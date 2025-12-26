@@ -5,6 +5,7 @@ import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUsers, createUser, deleteUser, checkSchema, getAllVideos, Video } from "../database/database";
 import { videoTitles } from "../../config/videoTitles";
+import { stardostVideoTitles } from "../../config/stardostTitles";
 import { useSQLiteContext } from "expo-sqlite";
 import * as Application from 'expo-application';
 import { Platform } from 'expo-modules-core';
@@ -50,11 +51,44 @@ const VideoList = () => {
   const [language, setLanguage] = useState("en");
   const [loading, setLoading] = useState(true);
   const [videos, setVideos] = useState<Video[]>([]);
-  const [items] = useState([
+  
+  // Source dropdown (bookbox/stardost) - declared early so it can be used in useEffect
+  const [source, setSource] = useState("bookbox");
+  const [sourceItems] = useState([
+    { label: "BookBox", value: "bookbox" },
+    { label: "StarDost", value: "stardost" },
+  ]);
+  
+  // Language items - dynamically update based on source
+  const [items, setItems] = useState([
     { label: "English", value: "en" },
     { label: "Hindi", value: "hi" },
     { label: "Punjabi", value: "pa" },
   ]);
+
+  // Update language items based on source
+  useEffect(() => {
+    if (source === "stardost") {
+      // Stardost only has Hindi and English
+      setItems([
+        { label: "English", value: "en" },
+        { label: "Hindi", value: "hi" },
+      ]);
+      // If current language is punjabi, switch to english
+      if (language === "pa") {
+        setLanguage("en");
+        AsyncStorage.setItem('languageDropdown', "en");
+      }
+    } else {
+      // Bookbox has all three languages
+      setItems([
+        { label: "English", value: "en" },
+        { label: "Hindi", value: "hi" },
+        { label: "Punjabi", value: "pa" },
+      ]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source]); // Only react to source changes, not language changes
 
   const [videoLanguages, setVideoLanguages] = useState<VideoLanguages>({});
   // Track which video ID should display which other video ID (for language switching)
@@ -64,31 +98,58 @@ const VideoList = () => {
   // Find videos with the same title in different languages
   const findVideosByTitle = (currentVideo: Video): { en?: Video; hi?: Video; pa?: Video } => {
     const result: { en?: Video; hi?: Video; pa?: Video } = {};
+    const videoSource = currentVideo.source || "bookbox";
     
-    // Find the matching title entry in videoTitles config
-    const titleEntry = videoTitles.find((vt) => {
-      return (
-        vt.english === currentVideo.title ||
-        vt.hindi === currentVideo.title ||
-        vt.punjabi === currentVideo.title
-      );
-    });
+    // Find the matching title entry in appropriate config (bookbox or stardost)
+    let titleEntry: any = null;
+    if (videoSource === "stardost") {
+      titleEntry = stardostVideoTitles.find((vt) => {
+        return (
+          vt.english === currentVideo.title ||
+          vt.hindi === currentVideo.title
+        );
+      });
+    } else {
+      titleEntry = videoTitles.find((vt) => {
+        return (
+          vt.english === currentVideo.title ||
+          vt.hindi === currentVideo.title ||
+          vt.punjabi === currentVideo.title
+        );
+      });
+    }
     
     if (!titleEntry) {
       // If no match found in config, just return the current video
       return { [currentVideo.language]: currentVideo };
     }
     
-    // Find all videos with matching titles in any language
+    // Find all videos with matching titles in any language (same source)
     videos.forEach((video) => {
-      if (
-        video.title === titleEntry.english ||
-        video.title === titleEntry.hindi ||
-        video.title === titleEntry.punjabi
-      ) {
-        if (video.language === "en") result.en = video;
-        else if (video.language === "hi") result.hi = video;
-        else if (video.language === "pa") result.pa = video;
+      const matchingSource = video.source || "bookbox";
+      // Only match videos from the same source
+      if (matchingSource !== videoSource) return;
+      
+      if (videoSource === "stardost") {
+        // For stardost, only check english and hindi
+        if (
+          video.title === titleEntry.english ||
+          video.title === titleEntry.hindi
+        ) {
+          if (video.language === "en") result.en = video;
+          else if (video.language === "hi") result.hi = video;
+        }
+      } else {
+        // For bookbox, check all languages
+        if (
+          video.title === titleEntry.english ||
+          video.title === titleEntry.hindi ||
+          video.title === titleEntry.punjabi
+        ) {
+          if (video.language === "en") result.en = video;
+          else if (video.language === "hi") result.hi = video;
+          else if (video.language === "pa") result.pa = video;
+        }
       }
     });
     
@@ -127,6 +188,10 @@ const VideoList = () => {
       if (savedLevel) {
         setLevel(savedLevel);
       }
+      const savedSource = await AsyncStorage.getItem('sourceDropdown');
+      if (savedSource) {
+        setSource(savedSource);
+      }
       await loadVideos();
       setLoading(false);
     };
@@ -152,9 +217,11 @@ const VideoList = () => {
         setVideoLanguages(resetLanguages);
         setLevel("all");
         setLanguage("en");
+        setSource("bookbox");
         await AsyncStorage.setItem("videoLanguages", JSON.stringify(resetLanguages));
         await AsyncStorage.setItem("levelDropdown", "all");
         await AsyncStorage.setItem('languageDropdown', "en");
+        await AsyncStorage.setItem('sourceDropdown', "bookbox");
       }
     };
 
@@ -196,6 +263,9 @@ const VideoList = () => {
     { label: "Level 4", value: "4" },
   ]);
 
+  // Source dropdown open state
+  const [sourceOpen, setSourceOpen] = useState(false);
+
   const handleLanguageChange = (value: ((prevValue: string) => string) | string) => {
     const newValue = typeof value === "function" ? value(language) : value;
     setLanguage(newValue);
@@ -210,16 +280,35 @@ const VideoList = () => {
     AsyncStorage.setItem('levelDropdown', newValue);
   };
 
+  const handleSourceChange = (value: ((prevValue: string) => string) | string) => {
+    const newValue = typeof value === "function" ? value(source) : value;
+    setSource(newValue);
+    AsyncStorage.setItem('sourceDropdown', newValue);
+    // Language will be updated by useEffect when source changes if needed
+  };
+
 
   // Get a consistent key for a video group (same title across languages)
   const getVideoGroupKey = (video: Video): string | null => {
-    const titleEntry = videoTitles.find((vt) => {
-      return (
-        vt.english === video.title ||
-        vt.hindi === video.title ||
-        vt.punjabi === video.title
-      );
-    });
+    const videoSource = video.source || "bookbox";
+    let titleEntry: any = null;
+    
+    if (videoSource === "stardost") {
+      titleEntry = stardostVideoTitles.find((vt) => {
+        return (
+          vt.english === video.title ||
+          vt.hindi === video.title
+        );
+      });
+    } else {
+      titleEntry = videoTitles.find((vt) => {
+        return (
+          vt.english === video.title ||
+          vt.hindi === video.title ||
+          vt.punjabi === video.title
+        );
+      });
+    }
     
     // Use English title as the consistent key, or fallback to video title if not in config
     return titleEntry ? titleEntry.english : video.title;
@@ -342,6 +431,10 @@ const VideoList = () => {
   const filteredVideos = videos.filter((video) => {
     const matchesLevel = level === "all" || video.level === level;
     const videoLang = video.language || "en";
+    const videoSource = video.source || "bookbox"; // Default to bookbox for existing videos
+    
+    // Filter by source
+    const matchesSource = videoSource === source;
     
     // Check if this video is being displayed as a switched version elsewhere
     // If so, don't show it here (it will be shown where the original is)
@@ -351,13 +444,13 @@ const VideoList = () => {
       // Actually, we want to show both - the original in its filter, and the switched version where the original is
       // So we should still show switched videos in their own language filter
       const matchesLanguage = language ? videoLang === language : true;
-      return matchesLevel && matchesLanguage;
+      return matchesLevel && matchesLanguage && matchesSource;
     }
     
     // For original videos: show them in their language filter
     // Even if they've been switched (the switch only affects display, not filtering)
     const matchesLanguage = language ? videoLang === language : true;
-    return matchesLevel && matchesLanguage;
+    return matchesLevel && matchesLanguage && matchesSource;
   });
 
   return (
@@ -365,18 +458,38 @@ const VideoList = () => {
 
       <View className="flex flex-row justify-between px-4 py-6 items-center mt-10 gap-3">
         <DropDownPicker
+          open={sourceOpen}
+          value={source}
+          items={sourceItems}
+          setOpen={(val) => {
+            setSourceOpen(val);
+            if (open) setOpen(false);
+            if (levelOpen) setLevelOpen(false);
+          }}
+          setValue={handleSourceChange}
+          containerStyle={{ paddingVertical: 0, paddingHorizontal: 0, flex: 1 }}
+          style={{ height: 40, minHeight: 30 }}
+          textStyle={{ fontSize: 11 }}
+          arrowIconStyle={{ marginHorizontal: -5 }}
+          zIndex={sourceOpen ? 5000 : 1}
+          zIndexInverse={1000}
+        />
+        <DropDownPicker
           open={open}
           value={language}
           items={items}
           setOpen={(val) => {
             setOpen(val);
             if (levelOpen) setLevelOpen(false);
+            if (sourceOpen) setSourceOpen(false);
           }}
           setValue={handleLanguageChange}
           containerStyle={{ paddingVertical: 0, paddingHorizontal: 0, flex: 1 }}
           style={{ height: 40, minHeight: 30 }}
           textStyle={{ fontSize: 11 }}
           arrowIconStyle={{ marginHorizontal: -5 }}
+          zIndex={open ? 4000 : 1}
+          zIndexInverse={1000}
         />
         <DropDownPicker
           open={levelOpen}
@@ -385,12 +498,15 @@ const VideoList = () => {
           setOpen={(val) => {
             setLevelOpen(val);
             if (open) setOpen(false);
+            if (sourceOpen) setSourceOpen(false);
           }}
           setValue={handleLevelChange}
           containerStyle={{ paddingVertical: 0, flex: 1, paddingHorizontal: 0 }}
           style={{ height: 40, minHeight: 30 }}
           textStyle={{ fontSize: 11 }}
           arrowIconStyle={{ marginHorizontal: -5 }}
+          zIndex={levelOpen ? 3000 : 1}
+          zIndexInverse={1000}
         />
         <TouchableOpacity 
           className="w-[100px] h-[70px] flex-1" 

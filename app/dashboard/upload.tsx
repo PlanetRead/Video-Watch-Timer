@@ -28,6 +28,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { BackHandler } from "react-native";
 import { requestMediaLibraryPermissions, requestCameraPermissions, checkMediaLibraryPermissions } from "@/utils/permissions";
 import { getTitleItems } from "@/config/videoTitles";
+import { getStardostTitleItems } from "@/config/stardostTitles";
 
 // Separate component for manual title input using fully uncontrolled pattern
 // This prevents ANY re-renders from causing focus loss
@@ -89,10 +90,10 @@ const UploadVideo = () => {
     requestPermissions();
   }, []);
 
-  // Language dropdown
+  // Language dropdown - updates based on source (stardost only has en/hi)
   const [languageOpen, setLanguageOpen] = useState(false);
   const [language, setLanguage] = useState("en");
-  const [languageItems] = useState([
+  const [languageItems, setLanguageItems] = useState([
     { label: "English", value: "en" },
     { label: "Hindi", value: "hi" },
     { label: "Punjabi", value: "pa" },
@@ -108,7 +109,15 @@ const UploadVideo = () => {
     { label: "Level 4", value: "4" },
   ]);
 
-  // Title dropdown - updates based on language
+  // Source dropdown (bookbox/stardost)
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [source, setSource] = useState("bookbox");
+  const [sourceItems] = useState([
+    { label: "BookBox", value: "bookbox" },
+    { label: "StarDost", value: "stardost" },
+  ]);
+
+  // Title dropdown - updates based on language and source
   const [titleOpen, setTitleOpen] = useState(false);
   const [titleItems, setTitleItems] = useState(() => getTitleItems(language as "en" | "hi" | "pa"));
   const [showManualTitleInput, setShowManualTitleInput] = useState(false);
@@ -123,18 +132,47 @@ const UploadVideo = () => {
     return "Other";
   };
   
-  // Update title items when language changes
+  // Update language items when source changes
   useEffect(() => {
-    const items = getTitleItems(language as "en" | "hi" | "pa");
+    if (source === "stardost") {
+      // Stardost only has Hindi and English
+      setLanguageItems([
+        { label: "English", value: "en" },
+        { label: "Hindi", value: "hi" },
+      ]);
+      // If current language is punjabi, switch to english
+      if (language === "pa") {
+        setLanguage("en");
+      }
+    } else {
+      // Bookbox has all three languages
+      setLanguageItems([
+        { label: "English", value: "en" },
+        { label: "Hindi", value: "hi" },
+        { label: "Punjabi", value: "pa" },
+      ]);
+    }
+  }, [source]);
+
+  // Update title items when language or source changes
+  useEffect(() => {
+    let items;
+    if (source === "stardost") {
+      // Use stardost titles, only en and hi
+      items = getStardostTitleItems(language as "en" | "hi");
+    } else {
+      // Use bookbox titles, all languages
+      items = getTitleItems(language as "en" | "hi" | "pa");
+    }
     // Add "Other" option at the end
     const otherLabel = getOtherLabel(language as "en" | "hi" | "pa");
     items.push({ label: otherLabel, value: "__OTHER__" });
     setTitleItems(items);
-    // Reset title and manual input when language changes
+    // Reset title and manual input when language or source changes
     setTitle("");
     setManualTitle("");
     setShowManualTitleInput(false);
-  }, [language]);
+  }, [language, source]);
 
   // Memoize onChangeText handler - store in ref to prevent re-renders, update state only when needed
   const handleManualTitleChange = useCallback((text: string) => {
@@ -585,7 +623,8 @@ const UploadVideo = () => {
         savedThumbnailUri || "",
         savedVideoUri,
         language,
-        level
+        level,
+        source
       );
 
       if (videoDbId) {
@@ -600,9 +639,11 @@ const UploadVideo = () => {
               setThumbnailUri(null);
               setLanguage("en");
               setLevel("1");
+              setSource("bookbox");
               setTitleOpen(false);
               setLanguageOpen(false);
               setLevelOpen(false);
+              setSourceOpen(false);
               setManualTitle("");
               setShowManualTitleInput(false);
               // Navigate back to home or refresh
@@ -661,6 +702,11 @@ const UploadVideo = () => {
         <Text className="text-xs text-gray-600">
           Level: <Text className="font-semibold text-gray-700">{item.level}</Text>
         </Text>
+        <Text className="text-xs text-gray-600">
+          Source: <Text className="font-semibold text-gray-700">{(item.source || "bookbox").toUpperCase()}</Text>
+        </Text>
+      </View>
+      <View className="flex-row justify-end mt-1">
         <Text className="text-xs text-gray-500">
           {formatDate(item.created_at)}
         </Text>
@@ -737,9 +783,31 @@ const UploadVideo = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Language and Level Dropdowns */}
+      {/* Source, Language and Level Dropdowns */}
+      <View className="mb-4">
+        <Text className="text-black text-base font-bold mb-2">Source</Text>
+        <View style={{ zIndex: sourceOpen ? 5000 : 1 }}>
+          <DropDownPicker
+            open={sourceOpen}
+            value={source}
+            items={sourceItems}
+            setOpen={(val) => {
+              setSourceOpen(val);
+              if (languageOpen) setLanguageOpen(false);
+              if (levelOpen) setLevelOpen(false);
+              if (titleOpen) setTitleOpen(false);
+            }}
+            setValue={setSource}
+            placeholder="Select source"
+            containerStyle={{ minHeight: 40 }}
+            zIndex={sourceOpen ? 5000 : 1}
+            zIndexInverse={1000}
+          />
+        </View>
+      </View>
+
       <View className="flex-row gap-4 mb-4">
-        <View className="flex-1" style={{ zIndex: languageOpen ? 3000 : 1 }}>
+        <View className="flex-1" style={{ zIndex: languageOpen ? 4000 : 1 }}>
           <Text className="text-black text-base font-bold mb-2">Language</Text>
           <DropDownPicker
             open={languageOpen}
@@ -749,16 +817,17 @@ const UploadVideo = () => {
               setLanguageOpen(val);
               if (levelOpen) setLevelOpen(false);
               if (titleOpen) setTitleOpen(false);
+              if (sourceOpen) setSourceOpen(false);
             }}
             setValue={setLanguage}
             placeholder="Select language"
             containerStyle={{ minHeight: 40 }}
-            zIndex={languageOpen ? 3000 : 1}
+            zIndex={languageOpen ? 4000 : 1}
             zIndexInverse={1000}
           />
         </View>
 
-        <View className="flex-1" style={{ zIndex: levelOpen ? 2000 : 1 }}>
+        <View className="flex-1" style={{ zIndex: levelOpen ? 3000 : 1 }}>
           <Text className="text-black text-base font-bold mb-2">Level</Text>
           <DropDownPicker
             open={levelOpen}
@@ -768,11 +837,12 @@ const UploadVideo = () => {
               setLevelOpen(val);
               if (languageOpen) setLanguageOpen(false);
               if (titleOpen) setTitleOpen(false);
+              if (sourceOpen) setSourceOpen(false);
             }}
             setValue={setLevel}
             placeholder="Select level"
             containerStyle={{ minHeight: 40 }}
-            zIndex={levelOpen ? 2000 : 1}
+            zIndex={levelOpen ? 3000 : 1}
             zIndexInverse={1000}
           />
         </View>
@@ -789,6 +859,7 @@ const UploadVideo = () => {
             setTitleOpen(val);
             if (languageOpen) setLanguageOpen(false);
             if (levelOpen) setLevelOpen(false);
+            if (sourceOpen) setSourceOpen(false);
           }}
           setValue={(value: string | ((prev: string) => string)) => {
             // Handle both string value and callback function
@@ -901,7 +972,7 @@ const UploadVideo = () => {
         <Text className="text-black text-2xl font-black">Uploaded Videos</Text>
       </View>
     </View>
-  ), [title, language, level, videoUri, thumbnailUri, description, titleOpen, languageOpen, levelOpen, titleItems, showManualTitleInput, uploading, pickVideo, pickThumbnail, takePhoto, handleUpload, router, handleManualTitleChange]);
+  ), [title, language, level, source, videoUri, thumbnailUri, description, titleOpen, languageOpen, levelOpen, sourceOpen, titleItems, languageItems, sourceItems, showManualTitleInput, uploading, pickVideo, pickThumbnail, takePhoto, handleUpload, router, handleManualTitleChange]);
 
   // Handle back button to go back to home page
   useFocusEffect(
