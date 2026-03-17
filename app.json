@@ -10,7 +10,12 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.planetread.videowatchtimer"
+      "bundleIdentifier": "com.planetread.videowatchtimer",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to upload videos and select thumbnails.",
+        "NSPhotoLibraryAddUsageDescription": "This app needs access to save videos to your photo library.",
+        "NSCameraUsageDescription": "This app needs access to your camera to take photos for video thumbnails."
+      }
     },
     "android": {
       "package": "com.planetread.videowatchtimer",
@@ -18,7 +23,9 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.DOWNLOAD_WITHOUT_NOTIFICATION",
-        "android.permission.ACCESS_NETWORK_STATE"
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_MEDIA_LOCATION"
       ]
     },
     "web": {
@@ -29,7 +36,8 @@
     "plugins": [
       "expo-router",
       [
-        "expo-splash-screen",{
+        "expo-splash-screen",
+        {
           "backgroundColor": "#FFFFFF",
           "resizeMode": "contain",
           "image": "./assets/images/bird-logo.png",
@@ -54,7 +62,22 @@
       ],
       "@config-plugins/react-native-blob-util",
       "@config-plugins/react-native-pdf",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you share them and select video thumbnails.",
+          "cameraPermission": "The app accesses your camera to let you take photos for video thumbnails."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos.",
+          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save photos.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -64,7 +87,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "035efa62-7a9a-42a2-bf65-aee321fba071"
+        "projectId": "6c87a6bc-7031-474a-8c7d-970cc380f4b0"
       }
     }
   }
