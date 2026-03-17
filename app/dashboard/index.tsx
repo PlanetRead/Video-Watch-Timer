@@ -94,7 +94,7 @@ const AnalyticsDashboard = () => {
    const [editModalVisible, setEditModalVisible] = useState(false);
    const [newUsername, setNewUsername] = useState("");
    const [editSuccess, setEditSuccess] = useState(false);
-   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
    
 
   useEffect(() => {
@@ -515,7 +515,7 @@ const AnalyticsDashboard = () => {
       setAnalyticsData([]); // Clear the local state
       setTotalTime(0);
       setTotalViews(0);
-      setDeleteModalVisible(false);
+      setDeleteModalVisible(false)
     } catch (error) {
       console.error("Error deleting user data:", error);
       alert("Error deleting user data. Please try again.");
@@ -1058,7 +1058,7 @@ const AnalyticsDashboard = () => {
   </View>
 </Modal>
 
-<Modal
+  <Modal
   animationType="slide"
   transparent={true}
   visible={deleteModalVisible}
@@ -1086,6 +1086,7 @@ const AnalyticsDashboard = () => {
     </View>
   </View>
 </Modal>
+
 
     </SafeAreaView>
   );

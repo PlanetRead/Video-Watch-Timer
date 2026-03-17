@@ -168,21 +168,21 @@ const SyncToCloud = () => {
 
             const { error: analyticsError } = await supabaseClient
               .from("video_analytics")
-              .upsert(
+               .upsert(
                 [
                   {
                     user_id: user.id,
                     name:user.user_name,
                     video_id: analytics.video_id,
-                    english_title: analytics.english_title || `Video ${analytics.video_id}`,
-                    punjabi_title: analytics.punjabi_title || `Video ${analytics.video_id}`,
-                    level: analytics.level || "1",
+                    english_title: analytics.english_title,
+                    punjabi_title: analytics.punjabi_title,
+                    level: analytics.level,
                     date: analytics.date,
                     total_views_day: analytics.total_views_day,
                     total_time_day: analytics.total_time_day,
                     last_time_stamp: lastTimestamp,
                     language: analytics.language,
-                  }
+                    }
                 ],
                 {
                   onConflict: 'user_id,video_id,date,language',
